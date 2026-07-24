@@ -46,6 +46,9 @@ next-env.d.ts
 *.db
 *.db-journal
 
+# user-uploaded content
+/public/uploads/
+
 # tool-generated assistant scaffolding (from `prisma init`), not app code
 .claude/skills/
 .agents/
