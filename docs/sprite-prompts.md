@@ -149,3 +149,46 @@ Level 9: a grand main stage with pyrotechnic rigs, the ferris wheel fully lit at
 
 Level 10: the full festival at its peak — the main stage erupts with pyrotechnics and lasers, a massive cheering crowd, the illuminated ferris wheel turning above a sprawling ground of glowing tents and stalls.
 ```
+
+---
+
+## Village map background (`public/sprites/village-map/`)
+
+Unlike the building sprites above (standalone objects via `create_map_object`),
+these are seamless repeating textures generated via `create_tiles_pro`
+(`tile_type: "square_topdown"`, `tile_view: "top-down"`, `outline_mode:
+"segmentation"`), plus one standalone object for the pond. The layout
+that places these (world size, clearing/pond rects, building coordinates,
+path segments) lives in `src/lib/villageMap.ts`, not here.
+
+**Forest tile** (`forest-tile.png`, 64×64 — surrounds the clearing):
+```
+dense forest floor tile: small pine and oak tree canopies viewed from directly above, dappled shade, warm cozy color palette (amber, terracotta, cream, soft browns), seamless tileable texture, pixel art, no UI, no text
+```
+
+**Clearing tile** (`clearing-tile.png`, 64×64 — fills the open area where
+buildings sit):
+```
+sunlit clearing ground: soft dirt path patches and short grass, warm cozy color palette (amber, terracotta, cream, soft browns), seamless tileable texture, top-down, pixel art, no UI, no text
+```
+
+**Path tile** (`path-tile.png`, 64×64 — repeated and rotated per segment
+via `pathSegmentStyle()` to connect buildings): the straightforward "dirt
+path with pebbles" prompt produced a tile with visible plank-like grid
+seams at 32px; what actually worked was explicitly ruling that out:
+```
+irregular dirt path texture: soft uneven packed earth, scattered tiny pebbles and specks of gravel, no planks, no boards, no grid lines, no repeating stripes, organic natural ground texture, warm cozy color palette (amber, terracotta, cream, soft browns), seamless tileable, top-down, pixel art, no UI, no text
+```
+
+**Pond** (`pond.png`, 256×192, standalone transparent object via
+`create_map_object`, `view: "high top-down"`, matching the building-sprite
+style anchor):
+```
+a small calm pond with lily pads and a gently sloped grassy bank, warm cozy color palette (amber, terracotta, cream, soft browns), clean readable silhouette, soft pixel shading, light source from upper-left, no UI, no drop shadow, charming style like Stardew Valley or Clash of Clans village buildings
+```
+
+**Picking a variation:** `create_tiles_pro` returns 16 candidate tiles per
+job. Not all tile seamlessly in practice — some produce an obvious
+repeating blob/grid at the seams. Before committing one to disk, tile it
+2x2 or 4x4 with Pillow and eyeball it; the one with the least visible
+repeat wins, even if a different variation looked nicer in isolation.

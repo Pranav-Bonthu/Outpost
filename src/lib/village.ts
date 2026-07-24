@@ -54,6 +54,23 @@ export const SLUG_TO_BUILDING_TYPE: Record<string, BuildingType> =
     ])
   );
 
+// Buildings with a generated sprite ladder in /public/sprites/<slug>/level-N.png.
+// Add a type here once its full level range has real art; others keep the emoji.
+const SPRITE_LEVELS: Partial<Record<BuildingType, number>> = {
+  ZOO: 10,
+  ARENA: 10,
+  CHICKEN_PLACE: 10,
+  MUSIC_FESTIVAL: 10,
+  VILLAGE_CENTER: 8,
+};
+
+export function spritePath(type: BuildingType, level: number) {
+  const maxSpriteLevel = SPRITE_LEVELS[type];
+  if (!maxSpriteLevel) return null;
+  const clamped = Math.min(Math.max(level, 1), maxSpriteLevel);
+  return `/sprites/${BUILDING_INFO[type].slug}/level-${clamped}.png`;
+}
+
 export function centerTierForLevel(level: number) {
   const index = Math.min(Math.max(level, 1), CENTER_MAX_LEVEL) - 1;
   return CENTER_TIERS[index];

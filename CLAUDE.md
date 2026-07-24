@@ -84,9 +84,52 @@ part of the system:
   `prisma.$transaction` for atomicity.
 - Cost/rate curves (`generatorUpgradeCost`, `centerUpgradeCost`,
   `generatorMoneyPerHour`) are simple linear formulas — tune freely.
-- Buildings render as emoji placeholders (`BUILDING_INFO`,
-  `CENTER_TIERS`) pending real pixel-art sprites; see
-  `docs/sprite-prompts.md`.
+- Buildings render generated pixel-art sprites, one PNG per level, at
+  `public/sprites/<slug>/level-N.png` (`spritePath()` in
+  `src/lib/village.ts`, driven by the `SPRITE_LEVELS` map). Any
+  `BuildingType` not listed there falls back to its `BUILDING_INFO`
+  emoji — that's the path to follow when adding art for a new
+  building. Prompts used to generate the existing set (via the
+  PixelLab MCP server) are in `docs/sprite-prompts.md`. The site-wide
+  page background (`globals.css`, `body::before`) is a separate
+  seamless leaf-tile texture at `public/sprites/background-tile.png`,
+  rendered as a fixed, low-`opacity` overlay behind everything — not
+  to be confused with the village map's own background (next point).
+
+**The village page is an interactive map, not a static list**
+(`src/app/village/page.tsx` + `src/components/VillageMap.tsx`):
+- `src/lib/villageMap.ts` defines a fixed "world" coordinate space
+  (`WORLD_WIDTH`/`WORLD_HEIGHT`, `BUILDING_SLOTS` keyed by
+  `BuildingType`, `FUTURE_SLOTS` for two reserved-but-unbuilt plots,
+  `PATH_SEGMENTS`) plus `pathSegmentStyle()`, a pure geometry helper
+  that turns two points into a rotated CSS strip. This file is
+  deliberately Prisma-free (only a type-only `BuildingType` import,
+  erased at compile time) so it's safe to import from client
+  components — unlike `village.ts`, which imports `@/lib/prisma` at
+  module scope and would break the client bundle if ever imported from
+  a `"use client"` file. **Any new interactive village component must
+  stay presentational**: resolve everything from `village.ts`/Prisma
+  in `village/page.tsx` (server component) into a plain
+  `BuildingMarkerData[]` prop array, the same way `UpgradeButton`
+  already takes primitives instead of a `BuildingType`.
+- `VillageMap.tsx` (`"use client"`) wraps `react-zoom-pan-pinch`'s
+  `TransformWrapper`/`TransformComponent` around a composed scene:
+  a repeating forest tile (border), a repeating clearing tile (center
+  patch), a standalone pond sprite (left side), rotated path-tile
+  strips connecting buildings, then `BuildingMarker` sprites/emoji and
+  dashed `FUTURE_SLOTS` placeholders, all absolutely positioned by
+  world coordinates.
+- Clicking a `BuildingMarker` opens `BuildingUpgradePopover`, which
+  embeds the existing, unmodified `UpgradeButton`. Positioning uses the
+  clicked marker's post-transform `getBoundingClientRect()` rendered as
+  `position: fixed` in screen space — no matrix-inversion needed to
+  account for the current pan/zoom — and the popover simply closes on
+  the wrapper's `onTransform` callback rather than tracking a moving
+  anchor.
+- The two future slots have no backing `Building` row and need no
+  schema change; add a real building later by giving it a
+  `BuildingType` enum value + `BUILDING_INFO` entry + a `BUILDING_SLOTS`
+  coordinate, same as any other building.
 
 **Request flow convention:** server components (pages under
 `src/app/{feed,goals,village}`) fetch data directly via Prisma/`getCurrentUser`
