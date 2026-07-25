@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Building" ADD COLUMN "x" INTEGER;
+ALTER TABLE "Building" ADD COLUMN "y" INTEGER;

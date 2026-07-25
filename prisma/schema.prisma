@@ -17,14 +17,19 @@ model User {
   passwordHash String
   avatarPath   String?
   bio          String?
+  characterId    String?
+  characterColor String?
   createdAt    DateTime @default(now())
 
   groupId String?
   group   Group?  @relation(fields: [groupId], references: [id])
 
-  posts    Post[]
-  comments Comment[]
-  goals    Goal[]
+  posts           Post[]
+  comments        Comment[]
+  goals           Goal[]
+  resumeAnalyses  ResumeAnalysis[]
+  fishCatches     FishCatch[]
+  birdSightings   BirdSighting[]
 }
 
 model Group {
@@ -33,11 +38,13 @@ model Group {
   inviteCode String   @unique
   createdAt  DateTime @default(now())
 
-  members   User[]
-  posts     Post[]
-  goals     Goal[]
-  points    GroupPoints?
-  buildings Building[]
+  members       User[]
+  posts         Post[]
+  goals         Goal[]
+  points        GroupPoints?
+  buildings     Building[]
+  fishCatches   FishCatch[]
+  birdSightings BirdSighting[]
 }
 
 enum PostTag {
@@ -118,8 +125,77 @@ model Building {
   group           Group        @relation(fields: [groupId], references: [id], onDelete: Cascade)
   type            BuildingType
   level           Int          @default(1)
+  x               Int?
+  y               Int?
   lastCollectedAt DateTime     @default(now())
   createdAt       DateTime     @default(now())
 
   @@unique([groupId, type])
+}
+
+model ResumeAnalysis {
+  id             String   @id @default(cuid())
+  authorId       String
+  author         User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  resumeText     String
+  jobText        String
+  jobTitle       String?
+  matchScore     Int
+  matchingSkills String // JSON-encoded string[]
+  missingSkills  String // JSON-encoded string[]
+  advice         String // JSON-encoded array of { text, resourceTitle, resourceUrl }
+  createdAt      DateTime @default(now())
+}
+
+enum FishSpecies {
+  BLUEGILL
+  MINNOW
+  CATFISH
+  TROUT
+  BASS
+  PIKE
+  STURGEON
+  GOLDEN_KOI
+  ANGLERFISH
+  LEVIATHAN_EEL
+}
+
+enum BirdSpecies {
+  SPARROW
+  PIGEON
+  ROBIN
+  CARDINAL
+  BLUE_JAY
+  WOODPECKER
+  BARN_OWL
+  RED_TAILED_HAWK
+  SNOWY_EGRET
+  GOLDEN_PHOENIX_FINCH
+}
+
+// Shared per-group collection: one row per species ever unlocked by the
+// group (not per catch attempt). Money is spent from the shared group pool
+// regardless of who clicks, so catcherId is for attribution only.
+model FishCatch {
+  id        String      @id @default(cuid())
+  groupId   String
+  group     Group       @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  catcherId String
+  catcher   User        @relation(fields: [catcherId], references: [id], onDelete: Cascade)
+  species   FishSpecies
+  createdAt DateTime    @default(now())
+
+  @@unique([groupId, species])
+}
+
+model BirdSighting {
+  id        String      @id @default(cuid())
+  groupId   String
+  group     Group       @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  catcherId String
+  catcher   User        @relation(fields: [catcherId], references: [id], onDelete: Cascade)
+  species   BirdSpecies
+  createdAt DateTime    @default(now())
+
+  @@unique([groupId, species])
 }

@@ -26,9 +26,44 @@ export type BuildingMarkerData = {
   emoji: string;
   spriteUrl: string | null;
   level: number;
+  x: number;
+  y: number;
   cost: number;
   currencyLabel: "pts" | "money";
   canAfford: boolean;
   isMaxLevel: boolean;
   detailLabel: string;
+};
+
+export type ActivityId = "POND" | "BIRDWATCH_SPOT";
+
+export const POND_SLOT = { x: 1380, y: 360 };
+export const BIRDWATCH_SLOT = { x: 1250, y: 480 };
+
+export type ActivityMarkerData = {
+  id: ActivityId;
+  kind: "fish" | "bird";
+  name: string;
+  emoji: string;
+  x: number;
+  y: number;
+};
+
+export type PlayerMarkerData = {
+  userId: string;
+  name: string;
+  characterId: string | null;
+  characterColor: string | null;
+  spriteBaseUrl: string | null;
+};
+
+// Superset of the BUILDING_SLOTS cluster with margin, kept clear of the
+// forest border/pond baked into world-background.png. There's no exposed
+// collision data for that image, so this is hand-tuned by eye (same as
+// BUILDING_SLOTS itself) rather than derived from anything measurable.
+export const WALKABLE_BOUNDS = {
+  minX: 420,
+  maxX: 1180,
+  minY: 420,
+  maxY: 800,
 };

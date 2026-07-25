@@ -10,6 +10,7 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.115.0",
     "@libsql/client": "^0.17.4",
     "@prisma/adapter-libsql": "^7.9.0",
     "@prisma/client": "^7.9.0",

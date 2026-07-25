@@ -34,6 +34,12 @@ export default async function Nav() {
               Village
             </Link>
             <Link
+              href="/collection"
+              className="rounded-full px-3 py-1.5 hover:bg-accent-soft"
+            >
+              Collection
+            </Link>
+            <Link
               href="/members"
               className="rounded-full px-3 py-1.5 hover:bg-accent-soft"
             >
@@ -49,6 +55,12 @@ export default async function Nav() {
               className="rounded-lg px-3 py-2 text-sm hover:bg-accent-soft"
             >
               Profile
+            </Link>
+            <Link
+              href="/resume-check"
+              className="rounded-lg px-3 py-2 text-sm hover:bg-accent-soft"
+            >
+              Resume check
             </Link>
             <Link
               href="/members"

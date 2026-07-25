@@ -7,6 +7,7 @@
   --accent: #d97845;
   --accent-soft: #f3e3d3;
   --border: #ead9c4;
+  --village-canvas: #2f6b45;
 }
 
 @theme inline {
@@ -28,6 +29,7 @@
     --accent: #e79363;
     --accent-soft: #3a2e23;
     --border: #4a3c2f;
+    --village-canvas: #16291b;
   }
 }
 
