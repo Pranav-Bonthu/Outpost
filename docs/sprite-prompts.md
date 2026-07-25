@@ -154,41 +154,47 @@ Level 10: the full festival at its peak — the main stage erupts with pyrotechn
 
 ## Village map background (`public/sprites/village-map/`)
 
-Unlike the building sprites above (standalone objects via `create_map_object`),
-these are seamless repeating textures generated via `create_tiles_pro`
-(`tile_type: "square_topdown"`, `tile_view: "top-down"`, `outline_mode:
-"segmentation"`), plus one standalone object for the pond. The layout
-that places these (world size, clearing/pond rects, building coordinates,
-path segments) lives in `src/lib/villageMap.ts`, not here.
+The map background used to be three separately-tiled textures (forest,
+clearing, path) stamped repeatedly across the world, plus a standalone
+pond sprite. That read as an obvious repeating grid, so it was replaced
+with **one single cohesive painted scene** covering the whole world,
+generated via `create_map_object` (not a tileable texture at all).
 
-**Forest tile** (`forest-tile.png`, 64×64 — surrounds the clearing):
+`create_map_object`'s basic mode caps canvases at 400×400px, and
+`WORLD_WIDTH:WORLD_HEIGHT` (`src/lib/villageMap.ts`) is 1600:1200 — an
+exact 4:3 ratio — so the scene is authored at 400×300 and scaled up 4×
+in CSS (`background-size: 1600px 1200px`, `image-rendering: pixelated`),
+the same "author small, scale up crisply" convention as the building
+sprites above.
+
+**World background** (`world-background.png`, 400×300 — forest border,
+clearing, hub-and-spoke dirt paths, and the pond all baked into one
+image; matches `BUILDING_SLOTS`' proportions so buildings still land in
+the open clearing rather than in the trees):
 ```
-dense forest floor tile: small pine and oak tree canopies viewed from directly above, dappled shade, warm cozy color palette (amber, terracotta, cream, soft browns), seamless tileable texture, pixel art, no UI, no text
+a top-down village clearing scene: sunlit dirt clearing with short grass in the center, a small calm pond with lily pads and a gently sloped grassy bank on the left side of the clearing, dense pine and oak forest bordering all edges, four dirt paths radiating outward from the center like spokes toward four building plots, irregular packed-earth path texture with scattered pebbles, warm cozy color palette (amber, terracotta, cream, soft browns), full-frame scene filling the entire canvas edge-to-edge with no transparent gaps, soft pixel shading, light source from upper-left, no text, no UI, no drop shadow, charming style like Stardew Valley or Clash of Clans village layout
+```
+(`view: "high top-down"`, `detail: "medium detail"`, `shading: "basic
+shading"`, `outline: "lineless"`.) Verified after generation: 0%
+transparent pixels (fully opaque, no gaps), and the building slot
+coordinates all land inside the clearing/path area, not in the forest
+corners.
+
+## HUD icons (`public/sprites/hud/`)
+
+Two small standalone icons for the points/money HUD pill
+(`src/components/VillageHud.tsx`), authored at 32×32 via
+`create_map_object`, transparent background, same style anchor as the
+buildings.
+
+**Points icon** (`points-icon.png`):
+```
+a golden star badge with a small ribbon tail, collectible achievement icon, pixel art game asset, warm cozy color palette (amber, terracotta, cream, soft browns) with a bright gold accent, clean readable silhouette, soft pixel shading, light source from upper-left, no text, no UI, no drop shadow, charming style like Stardew Valley or Clash of Clans
 ```
 
-**Clearing tile** (`clearing-tile.png`, 64×64 — fills the open area where
-buildings sit):
+**Money icon** (`money-icon.png`):
 ```
-sunlit clearing ground: soft dirt path patches and short grass, warm cozy color palette (amber, terracotta, cream, soft browns), seamless tileable texture, top-down, pixel art, no UI, no text
+a single shiny gold coin with an embossed symbol, pixel art game asset, warm cozy color palette (amber, terracotta, cream, soft browns) with a bright gold accent, clean readable silhouette, soft pixel shading, light source from upper-left, no text, no UI, no drop shadow, charming style like Stardew Valley or Clash of Clans
 ```
-
-**Path tile** (`path-tile.png`, 64×64 — repeated and rotated per segment
-via `pathSegmentStyle()` to connect buildings): the straightforward "dirt
-path with pebbles" prompt produced a tile with visible plank-like grid
-seams at 32px; what actually worked was explicitly ruling that out:
-```
-irregular dirt path texture: soft uneven packed earth, scattered tiny pebbles and specks of gravel, no planks, no boards, no grid lines, no repeating stripes, organic natural ground texture, warm cozy color palette (amber, terracotta, cream, soft browns), seamless tileable, top-down, pixel art, no UI, no text
-```
-
-**Pond** (`pond.png`, 256×192, standalone transparent object via
-`create_map_object`, `view: "high top-down"`, matching the building-sprite
-style anchor):
-```
-a small calm pond with lily pads and a gently sloped grassy bank, warm cozy color palette (amber, terracotta, cream, soft browns), clean readable silhouette, soft pixel shading, light source from upper-left, no UI, no drop shadow, charming style like Stardew Valley or Clash of Clans village buildings
-```
-
-**Picking a variation:** `create_tiles_pro` returns 16 candidate tiles per
-job. Not all tile seamlessly in practice — some produce an obvious
-repeating blob/grid at the seams. Before committing one to disk, tile it
-2x2 or 4x4 with Pillow and eyeball it; the one with the least visible
-repeat wins, even if a different variation looked nicer in isolation.
+(Both: `view: "high top-down"`, `detail: "medium detail"`, `shading:
+"basic shading"`, `outline: "single color outline"`.)

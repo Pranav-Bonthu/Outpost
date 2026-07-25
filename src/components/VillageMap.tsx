@@ -1,27 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import BuildingMarker from "@/components/BuildingMarker";
 import BuildingUpgradePopover from "@/components/BuildingUpgradePopover";
+import VillageHud from "@/components/VillageHud";
 import {
   WORLD_WIDTH,
   WORLD_HEIGHT,
-  CLEARING_RECT,
-  POND_RECT,
   BUILDING_SLOTS,
   FUTURE_SLOTS,
-  PATH_SEGMENTS,
-  pathSegmentStyle,
   type BuildingMarkerData,
 } from "@/lib/villageMap";
 import type { BuildingType } from "@/generated/prisma/client";
 
 export default function VillageMap({
   markers,
+  groupPoints,
 }: {
   markers: BuildingMarkerData[];
+  groupPoints: { points: number; money: number };
 }) {
   const [active, setActive] = useState<{
     marker: BuildingMarkerData;
@@ -36,7 +34,7 @@ export default function VillageMap({
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-card">
+    <div className="relative w-full flex-1 min-h-0 overflow-hidden bg-background">
       <TransformWrapper
         initialScale={0.5}
         minScale={0.3}
@@ -45,72 +43,19 @@ export default function VillageMap({
         limitToBounds={false}
         onTransform={() => setActive(null)}
       >
-        <TransformComponent
-          wrapperStyle={{ width: "100%", height: "70vh" }}
-        >
+        <TransformComponent wrapperStyle={{ width: "100%", height: "100%" }}>
           <div
             className="relative"
-            style={{ width: WORLD_WIDTH, height: WORLD_HEIGHT }}
+            style={{
+              width: WORLD_WIDTH,
+              height: WORLD_HEIGHT,
+              backgroundImage:
+                'url("/sprites/village-map/world-background.png")',
+              backgroundSize: `${WORLD_WIDTH}px ${WORLD_HEIGHT}px`,
+              backgroundRepeat: "no-repeat",
+              imageRendering: "pixelated",
+            }}
           >
-            <div
-              className="absolute inset-0"
-              style={{
-                backgroundImage: 'url("/sprites/village-map/forest-tile.png")',
-                backgroundRepeat: "repeat",
-                backgroundSize: "64px 64px",
-                imageRendering: "pixelated",
-              }}
-            />
-
-            <div
-              className="absolute rounded-[80px]"
-              style={{
-                left: CLEARING_RECT.x,
-                top: CLEARING_RECT.y,
-                width: CLEARING_RECT.width,
-                height: CLEARING_RECT.height,
-                backgroundImage:
-                  'url("/sprites/village-map/clearing-tile.png")',
-                backgroundRepeat: "repeat",
-                backgroundSize: "64px 64px",
-                imageRendering: "pixelated",
-              }}
-            />
-
-            {PATH_SEGMENTS.map((seg, i) => {
-              const style = pathSegmentStyle(
-                BUILDING_SLOTS[seg.from],
-                BUILDING_SLOTS[seg.to]
-              );
-              return (
-                <div
-                  key={i}
-                  className="absolute"
-                  style={{
-                    left: style.left,
-                    top: style.top,
-                    width: style.width,
-                    height: style.height,
-                    transform: style.transform,
-                    transformOrigin: style.transformOrigin,
-                    backgroundImage:
-                      'url("/sprites/village-map/path-tile.png")',
-                    backgroundRepeat: "repeat",
-                    imageRendering: "pixelated",
-                  }}
-                />
-              );
-            })}
-
-            <Image
-              src="/sprites/village-map/pond.png"
-              alt="Village pond"
-              width={POND_RECT.width}
-              height={POND_RECT.height}
-              className="absolute [image-rendering:pixelated]"
-              style={{ left: POND_RECT.x, top: POND_RECT.y }}
-            />
-
             {markers.map((m) => (
               <BuildingMarker
                 key={m.type}
@@ -140,6 +85,8 @@ export default function VillageMap({
           </div>
         </TransformComponent>
       </TransformWrapper>
+
+      <VillageHud points={groupPoints.points} money={groupPoints.money} />
 
       {active && (
         <BuildingUpgradePopover

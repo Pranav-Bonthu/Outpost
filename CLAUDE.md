@@ -48,14 +48,47 @@ easy to trip over:
   `import { PrismaClient } from "@/generated/prisma/client"`.
 - This generator ships no bundled query engine — `PrismaClient` must be
   constructed with a driver adapter. The singleton in `src/lib/prisma.ts`
-  wires up `@prisma/adapter-better-sqlite3` against `DATABASE_URL`.
+  wires up `@prisma/adapter-libsql` (the `@libsql/client` driver) against
+  `DATABASE_URL`, with an optional `TURSO_AUTH_TOKEN`. The schema's
+  `datasource` provider stays `"sqlite"` either way — locally
+  `DATABASE_URL="file:./dev.db"` opens the same on-disk file this
+  generator has always used (no separate SQLite driver needed for dev);
+  in production `DATABASE_URL` instead points at a remote Turso/libSQL
+  database (`libsql://<db>.turso.io`) with `TURSO_AUTH_TOKEN` set,
+  since Vercel's serverless functions have no persistent local disk.
 
 **Auth** is NextAuth v5 (beta) with the Credentials provider and JWT
 sessions (no `Session` table — the cookie itself is the source of
-truth). Config lives in `src/lib/auth.ts`; `src/lib/session.ts` exports
-`getCurrentUser()`, which layers a Prisma lookup (including the user's
-`Group`) on top of `auth()` and is what most server components use.
-Session typing is augmented in `src/types/next-auth.d.ts`.
+truth). Config lives in `src/lib/auth.ts`, which sets `trustHost: true`
+so Auth.js accepts the host it's actually deployed behind (Vercel
+preview/production domains) instead of requiring an exact `AUTH_URL`
+match. `src/lib/session.ts` exports `getCurrentUser()`, which layers a
+Prisma lookup (including the user's `Group`) on top of `auth()` and is
+what most server components use. Session typing is augmented in
+`src/types/next-auth.d.ts`.
+
+**Deployment (Vercel + Turso):** the app is designed to deploy to
+Vercel's free Hobby tier with the database on Turso's free tier — see
+`.env.example` for the required production environment variables
+(`DATABASE_URL`, `TURSO_AUTH_TOKEN`, `AUTH_SECRET`). Provisioning the
+actual Vercel project and Turso database are one-time manual steps
+done through their dashboards/CLIs, not something this codebase
+automates. Applying schema migrations to Turso, however, **cannot** go
+through `prisma migrate deploy` — libSQL's remote protocol isn't one
+Prisma's migration engine understands (only the `@prisma/adapter-libsql`
+*client* driver adapter speaks it), so `prisma.config.ts`'s
+`datasource.url` has no way to reach it either. Instead,
+`scripts/turso-migrate.mjs` applies each `prisma/migrations/*/migration.sql`
+file directly over the same libSQL client the app uses, tracking
+applied state in a `_prisma_migrations` bookkeeping table so re-runs
+skip what's already applied:
+
+```bash
+DATABASE_URL="libsql://<db>.turso.io" TURSO_AUTH_TOKEN="<token>" node scripts/turso-migrate.mjs
+```
+
+Run this once after provisioning Turso, and again after every future
+migration is committed.
 
 **Data model / v1 constraint:** a `User` belongs to at most one `Group`
 (single-group membership, invite-code join, no multi-group support).
@@ -90,35 +123,43 @@ part of the system:
   `BuildingType` not listed there falls back to its `BUILDING_INFO`
   emoji — that's the path to follow when adding art for a new
   building. Prompts used to generate the existing set (via the
-  PixelLab MCP server) are in `docs/sprite-prompts.md`. The site-wide
-  page background (`globals.css`, `body::before`) is a separate
-  seamless leaf-tile texture at `public/sprites/background-tile.png`,
-  rendered as a fixed, low-`opacity` overlay behind everything — not
-  to be confused with the village map's own background (next point).
+  PixelLab MCP server) are in `docs/sprite-prompts.md`. There is no
+  site-wide background texture — every page just sits on the plain
+  theme `background-color` (`globals.css`).
 
-**The village page is an interactive map, not a static list**
+**The village page is a fullscreen interactive map, not a static list**
 (`src/app/village/page.tsx` + `src/components/VillageMap.tsx`):
 - `src/lib/villageMap.ts` defines a fixed "world" coordinate space
   (`WORLD_WIDTH`/`WORLD_HEIGHT`, `BUILDING_SLOTS` keyed by
-  `BuildingType`, `FUTURE_SLOTS` for two reserved-but-unbuilt plots,
-  `PATH_SEGMENTS`) plus `pathSegmentStyle()`, a pure geometry helper
-  that turns two points into a rotated CSS strip. This file is
-  deliberately Prisma-free (only a type-only `BuildingType` import,
-  erased at compile time) so it's safe to import from client
-  components — unlike `village.ts`, which imports `@/lib/prisma` at
-  module scope and would break the client bundle if ever imported from
-  a `"use client"` file. **Any new interactive village component must
-  stay presentational**: resolve everything from `village.ts`/Prisma
-  in `village/page.tsx` (server component) into a plain
-  `BuildingMarkerData[]` prop array, the same way `UpgradeButton`
-  already takes primitives instead of a `BuildingType`.
+  `BuildingType`, `FUTURE_SLOTS` for two reserved-but-unbuilt plots).
+  This file is deliberately Prisma-free (only a type-only
+  `BuildingType` import, erased at compile time) so it's safe to
+  import from client components — unlike `village.ts`, which imports
+  `@/lib/prisma` at module scope and would break the client bundle if
+  ever imported from a `"use client"` file. **Any new interactive
+  village component must stay presentational**: resolve everything
+  from `village.ts`/Prisma in `village/page.tsx` (server component)
+  into a plain `BuildingMarkerData[]` prop array, the same way
+  `UpgradeButton` already takes primitives instead of a `BuildingType`.
+- `village/page.tsx` is a thin wrapper: it fetches `groupPoints` and
+  builds `markers`, then renders `<VillageMap markers={markers}
+  groupPoints={groupPoints} />` filling the full flex-1 area below
+  `Nav` (the `html`/`body`/layout flex chain, with `min-h-0` down each
+  link, gives the map a definite fullscreen height with no hardcoded
+  nav-height math).
 - `VillageMap.tsx` (`"use client"`) wraps `react-zoom-pan-pinch`'s
-  `TransformWrapper`/`TransformComponent` around a composed scene:
-  a repeating forest tile (border), a repeating clearing tile (center
-  patch), a standalone pond sprite (left side), rotated path-tile
-  strips connecting buildings, then `BuildingMarker` sprites/emoji and
-  dashed `FUTURE_SLOTS` placeholders, all absolutely positioned by
-  world coordinates.
+  `TransformWrapper`/`TransformComponent` (sized to `100%`/`100%` of
+  its fullscreen wrapper) around the world div, whose background is a
+  single generated scene image (`public/sprites/village-map/
+  world-background.png`, authored at 400×300 and scaled 4× via CSS to
+  `WORLD_WIDTH`×`WORLD_HEIGHT` with `image-rendering: pixelated`) —
+  forest border, clearing, paths, and the pond are all baked into this
+  one image rather than composited from repeating tiles. On top of it:
+  `BuildingMarker` sprites/emoji and dashed `FUTURE_SLOTS` placeholders,
+  absolutely positioned by world coordinates. `VillageHud` renders as a
+  sibling of `TransformWrapper` (so pan/zoom never affects it) —
+  a small top-right pill pair showing points/money with generated
+  icons (`public/sprites/hud/points-icon.png`, `money-icon.png`).
 - Clicking a `BuildingMarker` opens `BuildingUpgradePopover`, which
   embeds the existing, unmodified `UpgradeButton`. Positioning uses the
   clicked marker's post-transform `getBoundingClientRect()` rendered as

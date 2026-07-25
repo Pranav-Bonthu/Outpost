@@ -62,40 +62,8 @@ export default async function VillagePage() {
   });
 
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-4 py-8">
-      <div>
-        <h1 className="text-xl font-semibold">Your village</h1>
-        <p className="text-sm text-foreground/60">
-          Everyone&apos;s updates and goals feed one shared total. No
-          individual rankings — just what the group builds together. Drag
-          to pan, scroll or pinch to zoom, and tap a building to upgrade it.
-        </p>
-      </div>
-
-      <div className="flex flex-wrap gap-4">
-        <div className="flex-1 rounded-2xl border border-border bg-card p-4 text-center">
-          <p className="text-xs uppercase tracking-wide text-foreground/50">
-            Points
-          </p>
-          <p className="text-2xl font-semibold">{groupPoints.points}</p>
-          <p className="text-xs text-foreground/50">
-            Earned from posts &amp; goals · spend on the Zoo, Arena, Chicken
-            Place, and Music Festival
-          </p>
-        </div>
-        <div className="flex-1 rounded-2xl border border-border bg-card p-4 text-center">
-          <p className="text-xs uppercase tracking-wide text-foreground/50">
-            Money
-          </p>
-          <p className="text-2xl font-semibold">{groupPoints.money}</p>
-          <p className="text-xs text-foreground/50">
-            Generated over time by your buildings · spend on the Village
-            Center
-          </p>
-        </div>
-      </div>
-
-      <VillageMap markers={markers} />
+    <main className="flex flex-1 min-h-0">
+      <VillageMap markers={markers} groupPoints={groupPoints} />
     </main>
   );
 }

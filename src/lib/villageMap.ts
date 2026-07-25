@@ -3,9 +3,6 @@ import type { BuildingType } from "@/generated/prisma/client";
 export const WORLD_WIDTH = 1600;
 export const WORLD_HEIGHT = 1200;
 
-export const CLEARING_RECT = { x: 300, y: 200, width: 1000, height: 800 };
-export const POND_RECT = { x: 40, y: 470, width: 256, height: 192 };
-
 export type FutureSlotId = "FUTURE_SLOT_1" | "FUTURE_SLOT_2";
 export type MapSlotId = BuildingType | FutureSlotId;
 
@@ -22,13 +19,6 @@ export const FUTURE_SLOTS: Record<FutureSlotId, { x: number; y: number }> = {
   FUTURE_SLOT_2: { x: 950, y: 880 },
 };
 
-export const PATH_SEGMENTS: Array<{ from: BuildingType; to: BuildingType }> = [
-  { from: "VILLAGE_CENTER", to: "ZOO" },
-  { from: "VILLAGE_CENTER", to: "ARENA" },
-  { from: "VILLAGE_CENTER", to: "CHICKEN_PLACE" },
-  { from: "VILLAGE_CENTER", to: "MUSIC_FESTIVAL" },
-];
-
 export type BuildingMarkerData = {
   type: BuildingType;
   slug: string;
@@ -42,23 +32,3 @@ export type BuildingMarkerData = {
   isMaxLevel: boolean;
   detailLabel: string;
 };
-
-export function pathSegmentStyle(
-  a: { x: number; y: number },
-  b: { x: number; y: number },
-  tileHeight = 64
-) {
-  const dx = b.x - a.x;
-  const dy = b.y - a.y;
-  const length = Math.hypot(dx, dy);
-  const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-
-  return {
-    left: a.x,
-    top: a.y - tileHeight / 2,
-    width: length,
-    height: tileHeight,
-    transform: `rotate(${angle}deg)`,
-    transformOrigin: "0 50%",
-  } as const;
-}
