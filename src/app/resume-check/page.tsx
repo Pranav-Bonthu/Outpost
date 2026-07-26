@@ -34,7 +34,7 @@ export default async function ResumeCheckPage() {
         </p>
       </div>
 
-      <ResumeCheckForm />
+      <ResumeCheckForm initialResumeText={user.resumeText} />
 
       <div className="flex flex-col gap-4">
         {analyses.length === 0 && (

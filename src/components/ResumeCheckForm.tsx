@@ -2,15 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 type StreamEvent =
   | { type: "status"; message: string; percent: number }
   | { type: "done"; id: string }
   | { type: "error"; message: string };
 
-export default function ResumeCheckForm() {
+export default function ResumeCheckForm({
+  initialResumeText,
+}: {
+  initialResumeText?: string | null;
+}) {
   const router = useRouter();
-  const [resumeText, setResumeText] = useState("");
+  const [resumeText, setResumeText] = useState(initialResumeText ?? "");
   const [jobText, setJobText] = useState("");
   const [strict, setStrict] = useState(false);
   const [budgetFriendly, setBudgetFriendly] = useState(false);
@@ -97,7 +102,7 @@ export default function ResumeCheckForm() {
 
     if (succeeded && !resultError) {
       setPercent(100);
-      setResumeText("");
+      setResumeText(initialResumeText ?? "");
       setJobText("");
       setLoading(false);
       router.refresh();
@@ -114,12 +119,20 @@ export default function ResumeCheckForm() {
     >
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
-            📄 Your resume
-          </label>
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
+              📄 Your resume
+            </label>
+            <Link
+              href="/profile"
+              className="text-xs font-medium text-accent hover:underline"
+            >
+              Edit in profile
+            </Link>
+          </div>
           <textarea
-            className="min-h-56 rounded-lg border border-border bg-transparent px-3 py-2 text-sm outline-none focus:border-accent"
-            placeholder="Paste your resume text…"
+            className="min-h-32 rounded-lg border border-border bg-transparent px-3 py-2 text-sm outline-none focus:border-accent"
+            placeholder="Paste your resume text, or save one to your profile…"
             value={resumeText}
             onChange={(e) => setResumeText(e.target.value)}
             required
@@ -130,7 +143,7 @@ export default function ResumeCheckForm() {
             💼 Job posting
           </label>
           <textarea
-            className="min-h-56 rounded-lg border border-border bg-transparent px-3 py-2 text-sm outline-none focus:border-accent"
+            className="min-h-32 rounded-lg border border-border bg-transparent px-3 py-2 text-sm outline-none focus:border-accent"
             placeholder="Paste the job posting…"
             value={jobText}
             onChange={(e) => setJobText(e.target.value)}

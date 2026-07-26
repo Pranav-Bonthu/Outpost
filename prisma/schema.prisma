@@ -17,6 +17,7 @@ model User {
   passwordHash String
   avatarPath   String?
   bio          String?
+  resumeText   String?
   characterId    String?
   characterColor String?
   createdAt    DateTime @default(now())
