@@ -199,6 +199,75 @@ a single shiny gold coin with an embossed symbol, pixel art game asset, warm coz
 (Both: `view: "high top-down"`, `detail: "medium detail"`, `shading:
 "basic shading"`, `outline: "single color outline"`.)
 
+## Fish & bird sprites (`public/sprites/fish/`, `public/sprites/birds/`)
+
+Collectible catch icons for the fishing/bird-watching mini-games
+(`src/lib/wildlife/fish.ts`, `src/lib/wildlife/birds.ts`). One flat static
+image per species (not a level ladder, not directional walk-cycle frames),
+authored at 64×64 via `create_map_object`, transparent background, same
+"warm cozy" style anchor as everything else, but swapping "single building"
+for "single creature" since these are animals, not structures:
+
+```
+pixel art game asset, isometric 3/4 view, single creature centered on a small transparent background, warm cozy color palette (amber, terracotta, cream, soft browns), clean readable silhouette, soft pixel shading, light source from upper-left, no text, no UI, no drop shadow, charming style like Stardew Valley or Clash of Clans
+```
+
+(All: `view: "high top-down"`, `detail: "medium detail"`, `shading: "basic
+shading"`, `outline: "single color outline"`.)
+
+**Generate order**: did one common-tier fish (Bluegill) and one common-tier
+bird (Sparrow) first, compared them against the existing building/HUD art
+side by side, then batched the remaining 18 — same "catch style drift
+early" reasoning as the building ladders.
+
+### Fish (`public/sprites/fish/<slug>.png`)
+
+```
+Bluegill (bluegill.png): a small round bluegill sunfish with a blue-green iridescent body and dark ear flap, mid-swim.
+
+Minnow (minnow.png): a tiny silver minnow fish with a slim streamlined body, small and quick.
+
+Channel Catfish (catfish.png): a whiskered channel catfish with a sleek gray-brown body and long barbels, bottom-dweller pose.
+
+Rainbow Trout (trout.png): a rainbow trout with iridescent pink and green speckled scales, mid-leap.
+
+Largemouth Bass (bass.png): a largemouth bass with a wide toothy grin and olive-green body, mid-leap out of water.
+
+Northern Pike (pike.png): a long sleek northern pike with sharp teeth and mottled green scales, lightning-fast predator pose.
+
+Lake Sturgeon (sturgeon.png): an ancient armor-plated lake sturgeon with bony scutes along its back and a long snout.
+
+Golden Koi (golden-koi.png): a shimmering golden koi fish with flowing fins and a luxurious tail.
+
+Pond Anglerfish (anglerfish.png): a small glowing-lure pond anglerfish with a bioluminescent antenna and a wide toothy mouth, mysterious oddity.
+
+Leviathan Eel (leviathan-eel.png): a mythic serpentine eel with glowing dark-blue scales coiled in a spiral, legendary deep-pond creature.
+```
+
+### Birds (`public/sprites/birds/<slug>.png`)
+
+```
+House Sparrow (sparrow.png): a small cheerful house sparrow with brown and gray speckled feathers, perched.
+
+Common Pigeon (pigeon.png): a plump gray common pigeon with an iridescent green-purple neck sheen, standing pose.
+
+American Robin (robin.png): an american robin with an orange-red breast and gray-brown back, cheerful spring pose.
+
+Northern Cardinal (cardinal.png): a bright red northern cardinal with a pointed crest and black face mask, perched.
+
+Blue Jay (blue-jay.png): a bold blue jay with vivid blue, white, and black plumage and a pointed crest, alert lookout pose.
+
+Pileated Woodpecker (woodpecker.png): a pileated woodpecker with a tall red crest and black-and-white striped body, clinging to a branch.
+
+Barn Owl (barn-owl.png): a ghostly barn owl with a heart-shaped white face and golden-brown speckled wings, dusk hunter pose.
+
+Red-Tailed Hawk (red-tailed-hawk.png): a soaring red-tailed hawk with a reddish tail and mottled brown wings spread wide, mid-flight.
+
+Snowy Egret (snowy-egret.png): an elegant snowy white egret with delicate wispy plumes and thin black legs, graceful wading pose.
+
+Golden Phoenix Finch (golden-phoenix-finch.png): a small mythical finch with ember-orange and gold glowing plumage.
+```
+
 ## Village characters (`public/sprites/characters/<slug>/`)
 
 Walking pixel-art avatars for the village map (`src/components/PlayerCharacter.tsx`),
