@@ -163,10 +163,9 @@ model ResumeAnalysis {
   resumeText     String
   jobText        String
   jobTitle       String?
-  matchScore     Int
   matchingSkills String // JSON-encoded string[]
   missingSkills  String // JSON-encoded string[]
-  advice         String // JSON-encoded array of { text, resourceTitle, resourceUrl }
+  advice         String // JSON-encoded array of AdviceItem (kind, title, timeEstimate, text, resourceTitle, resourceUrl, resourceImageUrl)
   createdAt      DateTime @default(now())
 }
 

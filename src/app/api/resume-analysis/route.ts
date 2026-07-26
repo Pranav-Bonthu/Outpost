@@ -57,13 +57,23 @@ export async function POST(request: Request) {
             resumeText,
             jobText,
             jobTitle: result.jobTitle,
-            matchScore: result.matchScore,
             matchingSkills: JSON.stringify(result.matchingSkills),
             missingSkills: JSON.stringify(result.missingSkills),
             advice: JSON.stringify(result.advice),
           },
         });
-        send({ type: "done", id: analysis.id });
+        send({
+          type: "done",
+          id: analysis.id,
+          analysis: {
+            id: analysis.id,
+            jobTitle: result.jobTitle,
+            matchingSkills: result.matchingSkills,
+            missingSkills: result.missingSkills,
+            advice: result.advice,
+            createdAt: analysis.createdAt,
+          },
+        });
       } catch (err) {
         const message =
           err instanceof Error && err.message === "AI_REQUEST_FAILED"

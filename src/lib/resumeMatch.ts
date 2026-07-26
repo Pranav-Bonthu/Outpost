@@ -1,27 +1,60 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { fetchOgImages } from "@/lib/linkPreview";
 
 export const MAX_INPUT_CHARS = 20000;
 
 export type AdviceItem = {
   kind: "project" | "certification" | "resource";
+  title: string;
+  timeEstimate: string;
   text: string;
   resourceTitle: string | null;
   resourceUrl: string | null;
+  resourceImageUrl: string | null;
 };
 
 export type ResumeMatchResult = {
   jobTitle: string | null;
-  matchScore: number;
   matchingSkills: string[];
   missingSkills: string[];
   advice: AdviceItem[];
 };
 
+// The shared shape fed to the results slideshow, whether it comes from a
+// freshly completed check (streamed "done" event) or a past analysis
+// fetched server-side — createdAt is always an ISO string in both paths.
+export type ResumeAnalysisSummary = {
+  id: string;
+  jobTitle: string | null;
+  matchingSkills: string[];
+  missingSkills: string[];
+  advice: AdviceItem[];
+  createdAt: string;
+};
+
+// Fills defaults for rows saved before title/timeEstimate/resourceImageUrl
+// existed, so old ResumeAnalysis rows render instead of crashing.
+export function normalizeAdviceItem(item: Partial<AdviceItem>): AdviceItem {
+  return {
+    kind: item.kind ?? "resource",
+    title: item.title ?? (item.text ? item.text.slice(0, 60) : "Suggestion"),
+    timeEstimate: item.timeEstimate ?? "Varies",
+    text: item.text ?? "",
+    resourceTitle: item.resourceTitle ?? null,
+    resourceUrl: item.resourceUrl ?? null,
+    resourceImageUrl: item.resourceImageUrl ?? null,
+  };
+}
+
+// What the model itself produces — resourceImageUrl is filled in afterward
+// from a server-side Open Graph lookup, never by the model.
+type ModelAdviceItem = Omit<AdviceItem, "resourceImageUrl">;
+type ModelResult = Omit<ResumeMatchResult, "advice"> & { advice: ModelAdviceItem[] };
+
 const RESULT_SCHEMA = {
   type: "object",
   properties: {
     jobTitle: { anyOf: [{ type: "string" }, { type: "null" }] },
-    matchScore: { type: "integer" },
     matchingSkills: { type: "array", items: { type: "string" } },
     missingSkills: { type: "array", items: { type: "string" } },
     advice: {
@@ -30,16 +63,18 @@ const RESULT_SCHEMA = {
         type: "object",
         properties: {
           kind: { type: "string", enum: ["project", "certification", "resource"] },
+          title: { type: "string" },
+          timeEstimate: { type: "string" },
           text: { type: "string" },
           resourceTitle: { anyOf: [{ type: "string" }, { type: "null" }] },
           resourceUrl: { anyOf: [{ type: "string" }, { type: "null" }] },
         },
-        required: ["kind", "text", "resourceTitle", "resourceUrl"],
+        required: ["kind", "title", "timeEstimate", "text", "resourceTitle", "resourceUrl"],
         additionalProperties: false,
       },
     },
   },
-  required: ["jobTitle", "matchScore", "matchingSkills", "missingSkills", "advice"],
+  required: ["jobTitle", "matchingSkills", "missingSkills", "advice"],
   additionalProperties: false,
 } as const;
 
@@ -47,10 +82,12 @@ const BASE_SYSTEM_PROMPT = `You are a career coach helping a job seeker understa
 
 Compare the resume against the job posting and determine:
 - jobTitle: the job title from the posting, or null if it isn't clear
-- matchScore: an integer 0-100 estimating overall fit
 - matchingSkills: skills/qualifications from the posting that the resume already demonstrates
 - missingSkills: skills/qualifications the posting wants that the resume does not show
-- advice: 3-5 concrete, self-directed things the candidate can go do on their own right now to close the gap — project ideas to build, certifications or courses to take, and other self-directed practice (a community, a book, a practice exercise, etc). Tag each item with a "kind" of "project", "certification", or "resource" (use "resource" for anything that isn't specifically a project or a certification/course).`;
+- advice: 3-5 concrete, self-directed things the candidate can go do on their own right now to close the gap — project ideas to build, certifications or courses to take, and other self-directed practice (a community, a book, a practice exercise, etc). Tag each item with a "kind" of "project", "certification", or "resource" (use "resource" for anything that isn't specifically a project or a certification/course). For each item also provide:
+  - title: a short, specific, skimmable name for the item (e.g. "Build a REST API with Node.js" or "AWS Certified Cloud Practitioner"), not a generic label like "Project idea"
+  - timeEstimate: a realistic time commitment as a short human phrase (e.g. "2-3 hours", "1 weekend", "2-3 weeks"), sized appropriately to the item
+  - text: a 1-2 sentence description of the specific skill gap this closes and why it matters for this job`;
 
 const SEARCH_INSTRUCTIONS = `For each item, use the web_search tool to find one real, currently available video, article, course page, or certification page that matches it, and include its title and URL. Only include a URL you actually found via search results — never invent, guess, or recall a URL from memory. You have a limited number of searches, so prioritize finding a link for the highest-impact items first; it's fine to leave resourceTitle/resourceUrl null on lower-priority items once you run out.`;
 
@@ -220,13 +257,14 @@ async function runAnalysis(
     throw new Error("AI_REQUEST_FAILED");
   }
 
-  const parsed = JSON.parse(lastText.text) as ResumeMatchResult;
+  const parsed = JSON.parse(lastText.text) as ModelResult;
 
   return {
     ...parsed,
     advice: parsed.advice.map((item) => ({
       ...item,
       resourceUrl: sanitizeUrl(item.resourceUrl),
+      resourceImageUrl: null,
     })),
   };
 }
@@ -271,11 +309,21 @@ export async function analyzeResumeMatch(
     clearTimeout(timeout);
   }
 
+  onProgress?.({ message: "Fetching preview images…", percent: 90 });
+  const imageUrls = await fetchOgImages(result.advice.map((item) => item.resourceUrl));
+  result = {
+    ...result,
+    advice: result.advice.map((item, i) => ({
+      ...item,
+      resourceImageUrl: imageUrls[i] ?? null,
+    })),
+  };
+
   onProgress?.({ message: "Saving your results…", percent: 95 });
   return result;
 }
 
-function sanitizeUrl(url: string | null): string | null {
+export function sanitizeUrl(url: string | null): string | null {
   if (!url) {
     return null;
   }

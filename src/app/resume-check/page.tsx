@@ -1,9 +1,12 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
-import ResumeCheckForm from "@/components/ResumeCheckForm";
-import ResumeAnalysisCard from "@/components/ResumeAnalysisCard";
-import type { AdviceItem } from "@/lib/resumeMatch";
+import ResumeCheckClient from "@/components/ResumeCheckClient";
+import {
+  normalizeAdviceItem,
+  type AdviceItem,
+  type ResumeAnalysisSummary,
+} from "@/lib/resumeMatch";
 
 export default async function ResumeCheckPage() {
   const user = await getCurrentUser();
@@ -14,14 +17,15 @@ export default async function ResumeCheckPage() {
     orderBy: { createdAt: "desc" },
   });
 
-  const analyses = rows.map((row) => ({
+  const analyses: ResumeAnalysisSummary[] = rows.map((row) => ({
     id: row.id,
     jobTitle: row.jobTitle,
-    matchScore: row.matchScore,
     matchingSkills: JSON.parse(row.matchingSkills) as string[],
     missingSkills: JSON.parse(row.missingSkills) as string[],
-    advice: JSON.parse(row.advice) as AdviceItem[],
-    createdAt: row.createdAt,
+    advice: (JSON.parse(row.advice) as Partial<AdviceItem>[]).map(
+      normalizeAdviceItem
+    ),
+    createdAt: row.createdAt.toISOString(),
   }));
 
   return (
@@ -29,24 +33,12 @@ export default async function ResumeCheckPage() {
       <div>
         <h1 className="text-xl font-semibold">Resume ↔ job match</h1>
         <p className="text-sm text-foreground/60">
-          Paste your resume and a job posting to see where you match, where
-          you fall short, and how to close the gap.
+          Paste a job posting to see where you match, where you fall short,
+          and how to close the gap.
         </p>
       </div>
 
-      <ResumeCheckForm initialResumeText={user.resumeText} />
-
-      <div className="flex flex-col gap-4">
-        {analyses.length === 0 && (
-          <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-foreground/50">
-            No checks yet. Paste a resume and a job posting above to get
-            started.
-          </p>
-        )}
-        {analyses.map((analysis) => (
-          <ResumeAnalysisCard key={analysis.id} analysis={analysis} />
-        ))}
-      </div>
+      <ResumeCheckClient resumeText={user.resumeText} analyses={analyses} />
     </main>
   );
 }

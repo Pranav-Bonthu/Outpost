@@ -2,20 +2,22 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import ResumeStatusBox from "@/components/ResumeStatusBox";
+import type { ResumeAnalysisSummary } from "@/lib/resumeMatch";
 
 type StreamEvent =
   | { type: "status"; message: string; percent: number }
-  | { type: "done"; id: string }
+  | { type: "done"; id: string; analysis: ResumeAnalysisSummary }
   | { type: "error"; message: string };
 
 export default function ResumeCheckForm({
-  initialResumeText,
+  resumeText,
+  onAnalysisComplete,
 }: {
-  initialResumeText?: string | null;
+  resumeText: string | null;
+  onAnalysisComplete: (analysis: ResumeAnalysisSummary) => void;
 }) {
   const router = useRouter();
-  const [resumeText, setResumeText] = useState(initialResumeText ?? "");
   const [jobText, setJobText] = useState("");
   const [strict, setStrict] = useState(false);
   const [budgetFriendly, setBudgetFriendly] = useState(false);
@@ -28,6 +30,8 @@ export default function ResumeCheckForm({
   const [status, setStatus] = useState("Starting analysis…");
   const [percent, setPercent] = useState(0);
   const [elapsed, setElapsed] = useState(0);
+
+  const hasResume = !!resumeText?.trim();
 
   useEffect(() => {
     if (!loading) return;
@@ -47,7 +51,7 @@ export default function ResumeCheckForm({
     setElapsed(0);
 
     let resultError: string | null = null;
-    let succeeded = false;
+    let completedAnalysis: ResumeAnalysisSummary | null = null;
 
     try {
       const res = await fetch("/api/resume-analysis", {
@@ -89,7 +93,7 @@ export default function ResumeCheckForm({
             } else if (event.type === "error") {
               resultError = event.message;
             } else if (event.type === "done") {
-              succeeded = true;
+              completedAnalysis = event.analysis;
             }
           }
         }
@@ -100,12 +104,12 @@ export default function ResumeCheckForm({
       resultError = "Something went wrong.";
     }
 
-    if (succeeded && !resultError) {
+    if (completedAnalysis && !resultError) {
       setPercent(100);
-      setResumeText(initialResumeText ?? "");
       setJobText("");
       setLoading(false);
       router.refresh();
+      onAnalysisComplete(completedAnalysis);
     } else {
       setError(resultError ?? "Something went wrong.");
       setLoading(false);
@@ -117,33 +121,15 @@ export default function ResumeCheckForm({
       onSubmit={handleSubmit}
       className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-4"
     >
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="flex flex-col gap-3">
+        <ResumeStatusBox resumeText={resumeText} />
+
         <div className="flex flex-col gap-1.5">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
-              📄 Your resume
-            </label>
-            <Link
-              href="/profile"
-              className="text-xs font-medium text-accent hover:underline"
-            >
-              Edit in profile
-            </Link>
-          </div>
-          <textarea
-            className="min-h-32 rounded-lg border border-border bg-transparent px-3 py-2 text-sm outline-none focus:border-accent"
-            placeholder="Paste your resume text, or save one to your profile…"
-            value={resumeText}
-            onChange={(e) => setResumeText(e.target.value)}
-            required
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-semibold uppercase tracking-wide text-foreground/60">
-            💼 Job posting
+          <label className="text-[11px] font-medium text-foreground/50">
+            💼 Job posting — paste it here
           </label>
           <textarea
-            className="min-h-32 rounded-lg border border-border bg-transparent px-3 py-2 text-sm outline-none focus:border-accent"
+            className="min-h-24 rounded-lg border border-border bg-transparent px-3 py-2 text-sm outline-none focus:border-accent"
             placeholder="Paste the job posting…"
             value={jobText}
             onChange={(e) => setJobText(e.target.value)}
@@ -228,6 +214,12 @@ export default function ResumeCheckForm({
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
+      {!hasResume && !loading && (
+        <p className="text-xs text-red-600">
+          Add a resume in your profile first.
+        </p>
+      )}
+
       {loading && (
         <div className="flex flex-col gap-1.5">
           <div className="h-2 w-full overflow-hidden rounded-full bg-accent-soft">
@@ -244,7 +236,7 @@ export default function ResumeCheckForm({
 
       <button
         type="submit"
-        disabled={loading}
+        disabled={loading || !hasResume}
         className="self-end rounded-full bg-accent px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
       >
         {loading ? "Analyzing…" : "Check match"}
