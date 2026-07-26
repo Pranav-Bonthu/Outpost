@@ -14,26 +14,45 @@ export default async function Nav() {
           🏕️ Outpost
         </Link>
 
-        {user?.groupId && (
+        {user && (
           <nav className="flex flex-wrap items-center gap-1 text-sm">
-            <Link
-              href="/feed"
-              className="rounded-full px-3 py-1.5 hover:bg-accent-soft"
-            >
-              Feed
-            </Link>
-            <Link
-              href="/resume-check"
-              className="rounded-full px-3 py-1.5 hover:bg-accent-soft"
-            >
-              Resume check
-            </Link>
-            <Link
-              href="/village"
-              className="rounded-full px-3 py-1.5 hover:bg-accent-soft"
-            >
-              Village
-            </Link>
+            {user.groupId ? (
+              <>
+                <Link
+                  href="/feed"
+                  className="rounded-full px-3 py-1.5 hover:bg-accent-soft"
+                >
+                  Feed
+                </Link>
+                <Link
+                  href="/resume-check"
+                  className="rounded-full px-3 py-1.5 hover:bg-accent-soft"
+                >
+                  Resume check
+                </Link>
+                <Link
+                  href="/village"
+                  className="rounded-full px-3 py-1.5 hover:bg-accent-soft"
+                >
+                  Village
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/resume-check"
+                  className="rounded-full px-3 py-1.5 hover:bg-accent-soft"
+                >
+                  Resume check
+                </Link>
+                <Link
+                  href="/group/new"
+                  className="rounded-full px-3 py-1.5 font-medium text-accent hover:bg-accent-soft"
+                >
+                  Join a village
+                </Link>
+              </>
+            )}
           </nav>
         )}
 

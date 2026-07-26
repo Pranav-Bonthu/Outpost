@@ -22,7 +22,7 @@ export default function LeaveGroupButton() {
       return;
     }
 
-    setConfirming(false);
+    router.push("/group/new");
     router.refresh();
   }
 
