@@ -84,6 +84,10 @@ export function generatorMoneyPerHour(level: number) {
   return level * 5;
 }
 
+export function generatorMoneyPerMinute(level: number) {
+  return generatorMoneyPerHour(level) / 60;
+}
+
 export function centerUpgradeCost(currentLevel: number) {
   return currentLevel * 500;
 }
@@ -115,10 +119,10 @@ export async function settleIncome(groupId: string) {
   let earned = 0;
 
   for (const building of buildings) {
-    const hoursElapsed =
-      (now.getTime() - building.lastCollectedAt.getTime()) / (1000 * 60 * 60);
+    const minutesElapsed =
+      (now.getTime() - building.lastCollectedAt.getTime()) / (1000 * 60);
     const pending = Math.floor(
-      hoursElapsed * generatorMoneyPerHour(building.level)
+      minutesElapsed * generatorMoneyPerMinute(building.level)
     );
     if (pending > 0) {
       earned += pending;
