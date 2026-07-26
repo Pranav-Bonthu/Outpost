@@ -14,6 +14,10 @@ export default function ResumeCheckForm() {
   const [jobText, setJobText] = useState("");
   const [strict, setStrict] = useState(false);
   const [budgetFriendly, setBudgetFriendly] = useState(false);
+  const [projectsOnly, setProjectsOnly] = useState(false);
+  const [timeBoxed, setTimeBoxed] = useState(false);
+  const [longTerm, setLongTerm] = useState(false);
+  const [teamFriendly, setTeamFriendly] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("Starting analysis…");
@@ -44,7 +48,16 @@ export default function ResumeCheckForm() {
       const res = await fetch("/api/resume-analysis", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resumeText, jobText, strict, budgetFriendly }),
+        body: JSON.stringify({
+          resumeText,
+          jobText,
+          strict,
+          budgetFriendly,
+          projectsOnly,
+          timeBoxed,
+          longTerm,
+          teamFriendly,
+        }),
       });
 
       if (!res.ok) {
@@ -152,6 +165,50 @@ export default function ResumeCheckForm() {
             }`}
           >
             💸 Free/cheap only
+          </button>
+          <button
+            type="button"
+            onClick={() => setProjectsOnly((p) => !p)}
+            className={`rounded-full border px-3 py-1 text-xs font-medium ${
+              projectsOnly
+                ? "border-accent bg-accent text-white"
+                : "border-border text-foreground/70 hover:bg-accent-soft"
+            }`}
+          >
+            🛠️ Projects only
+          </button>
+          <button
+            type="button"
+            onClick={() => setTimeBoxed((t) => !t)}
+            className={`rounded-full border px-3 py-1 text-xs font-medium ${
+              timeBoxed
+                ? "border-accent bg-accent text-white"
+                : "border-border text-foreground/70 hover:bg-accent-soft"
+            }`}
+          >
+            ⏱️ 2 hours or less
+          </button>
+          <button
+            type="button"
+            onClick={() => setLongTerm((l) => !l)}
+            className={`rounded-full border px-3 py-1 text-xs font-medium ${
+              longTerm
+                ? "border-accent bg-accent text-white"
+                : "border-border text-foreground/70 hover:bg-accent-soft"
+            }`}
+          >
+            📅 Long-term
+          </button>
+          <button
+            type="button"
+            onClick={() => setTeamFriendly((t) => !t)}
+            className={`rounded-full border px-3 py-1 text-xs font-medium ${
+              teamFriendly
+                ? "border-accent bg-accent text-white"
+                : "border-border text-foreground/70 hover:bg-accent-soft"
+            }`}
+          >
+            👥 Do as a team
           </button>
         </div>
       </div>

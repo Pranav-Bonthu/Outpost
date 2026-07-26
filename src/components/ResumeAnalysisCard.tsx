@@ -10,6 +10,12 @@ type Analysis = {
   createdAt: Date;
 };
 
+const KIND_LABELS: Record<AdviceItem["kind"], { emoji: string; label: string }> = {
+  project: { emoji: "🛠️", label: "Project idea" },
+  certification: { emoji: "🎓", label: "Certification" },
+  resource: { emoji: "📚", label: "Do this" },
+};
+
 export default function ResumeAnalysisCard({ analysis }: { analysis: Analysis }) {
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
@@ -55,27 +61,37 @@ export default function ResumeAnalysisCard({ analysis }: { analysis: Analysis })
       )}
 
       {analysis.advice.length > 0 && (
-        <div className="flex flex-col gap-1.5">
-          <p className="text-xs font-medium text-foreground/60">Advice</p>
-          <ul className="flex flex-col gap-2 text-sm leading-relaxed">
-            {analysis.advice.map((item, i) => (
-              <li key={i}>
-                {item.text}
-                {item.resourceUrl && (
-                  <>
-                    {" — "}
+        <div className="flex flex-col gap-1.5 border-t border-border pt-3">
+          <p className="text-xs font-medium text-foreground/60">
+            Go build your skills
+          </p>
+          <ul className="flex flex-col gap-3 text-sm leading-relaxed">
+            {analysis.advice.map((item, i) => {
+              const kind = KIND_LABELS[item.kind] ?? KIND_LABELS.resource;
+              return (
+                <li key={i} className="flex flex-col gap-0.5">
+                  <span>
+                    <span
+                      title={kind.label}
+                      className="mr-1.5 text-xs text-foreground/50"
+                    >
+                      {kind.emoji}
+                    </span>
+                    {item.text}
+                  </span>
+                  {item.resourceUrl && (
                     <a
                       href={item.resourceUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-accent underline underline-offset-2"
+                      className="ml-5 text-xs text-accent underline underline-offset-2"
                     >
-                      {item.resourceTitle ?? "Resource"}
+                      {item.resourceTitle ?? "View resource"} ↗
                     </a>
-                  </>
-                )}
-              </li>
-            ))}
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}

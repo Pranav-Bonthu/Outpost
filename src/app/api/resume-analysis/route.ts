@@ -32,6 +32,10 @@ export async function POST(request: Request) {
 
   const strict = body.strict === true;
   const budgetFriendly = body.budgetFriendly === true;
+  const projectsOnly = body.projectsOnly === true;
+  const timeBoxed = body.timeBoxed === true;
+  const longTerm = body.longTerm === true;
+  const teamFriendly = body.teamFriendly === true;
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
@@ -44,7 +48,7 @@ export async function POST(request: Request) {
         const result = await analyzeResumeMatch(
           resumeText,
           jobText,
-          { strict, budgetFriendly },
+          { strict, budgetFriendly, projectsOnly, timeBoxed, longTerm, teamFriendly },
           (progress) => send({ type: "status", ...progress })
         );
         const analysis = await prisma.resumeAnalysis.create({
