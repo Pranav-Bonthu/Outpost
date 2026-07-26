@@ -323,6 +323,105 @@ export async function analyzeResumeMatch(
   return result;
 }
 
+export type LinkResearchResult = {
+  resourceTitle: string | null;
+  resourceUrl: string | null;
+};
+
+const LINK_RESEARCH_SCHEMA = {
+  type: "object",
+  properties: {
+    resourceTitle: { anyOf: [{ type: "string" }, { type: "null" }] },
+    resourceUrl: { anyOf: [{ type: "string" }, { type: "null" }] },
+  },
+  required: ["resourceTitle", "resourceUrl"],
+  additionalProperties: false,
+} as const;
+
+// Individually timeboxed so one slow/failed search only costs that one
+// item — unlike the combined runAnalysis() call, where a single timeout
+// wipes out every link in the result.
+const LINK_RESEARCH_TIMEOUT_MS = 25_000;
+
+function buildLinkResearchSystemPrompt(jobTitle: string | null): string {
+  return `You are finding one real, currently available online resource for a specific piece of career advice given to a job seeker${
+    jobTitle ? ` applying to a "${jobTitle}" role` : ""
+  }.
+
+Use the web_search tool exactly once to find the single best resource for the advice item described in the user message: prefer that vendor/tool's official site or documentation if the advice names a specific tool or product; prefer a real YouTube tutorial video if the advice describes a workflow, process, or how-to skill; otherwise a solid article, course page, or certification page. Only return a URL you actually found via search results — never invent, guess, or recall a URL from memory. If you can't find a good match, leave resourceUrl null.
+
+Respond with only the JSON object described by the schema — no other text before or after it.`;
+}
+
+// Runs one isolated request per item (each with its own search budget and
+// timeout) rather than one combined call, so a slow or failed search never
+// costs more than the single item it belongs to. Never rejects.
+export async function researchMissingLinks(
+  items: Pick<AdviceItem, "kind" | "title" | "text">[],
+  jobTitle: string | null
+): Promise<LinkResearchResult[]> {
+  const system = buildLinkResearchSystemPrompt(jobTitle);
+
+  const settled = await Promise.allSettled(
+    items.map(async (item): Promise<LinkResearchResult> => {
+      const client = new Anthropic();
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), LINK_RESEARCH_TIMEOUT_MS);
+      try {
+        const response = await client.messages.create(
+          {
+            model: "claude-sonnet-5",
+            max_tokens: 1024,
+            tools: [
+              {
+                type: "web_search_20260209" as const,
+                name: "web_search" as const,
+                max_uses: 1,
+              },
+            ],
+            output_config: {
+              effort: "low",
+              format: { type: "json_schema", schema: LINK_RESEARCH_SCHEMA },
+            },
+            system,
+            messages: [
+              {
+                role: "user",
+                content: `Advice kind: ${item.kind}\nTitle: ${item.title}\nDescription: ${item.text}`,
+              },
+            ],
+          },
+          { signal: controller.signal }
+        );
+
+        if (response.stop_reason !== "end_turn") {
+          return { resourceTitle: null, resourceUrl: null };
+        }
+        const textBlocks = response.content.filter(
+          (block): block is Anthropic.TextBlock => block.type === "text"
+        );
+        const lastText = textBlocks[textBlocks.length - 1];
+        if (!lastText) {
+          return { resourceTitle: null, resourceUrl: null };
+        }
+        const parsed = JSON.parse(lastText.text) as LinkResearchResult;
+        return {
+          resourceTitle: parsed.resourceTitle ?? null,
+          resourceUrl: sanitizeUrl(parsed.resourceUrl ?? null),
+        };
+      } catch {
+        return { resourceTitle: null, resourceUrl: null };
+      } finally {
+        clearTimeout(timeout);
+      }
+    })
+  );
+
+  return settled.map((r) =>
+    r.status === "fulfilled" ? r.value : { resourceTitle: null, resourceUrl: null }
+  );
+}
+
 export function sanitizeUrl(url: string | null): string | null {
   if (!url) {
     return null;

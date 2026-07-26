@@ -18,6 +18,7 @@ model User {
   avatarPath   String?
   bio          String?
   resumeText   String?
+  lastDeepDiveAt DateTime?
   characterId    String?
   characterColor String?
   createdAt    DateTime @default(now())

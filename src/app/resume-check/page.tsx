@@ -8,6 +8,16 @@ import {
   type ResumeAnalysisSummary,
 } from "@/lib/resumeMatch";
 
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+function computeDeepDiveAvailableAt(lastDeepDiveAt: Date | null): string | null {
+  if (!lastDeepDiveAt) return null;
+  const elapsedMs = Date.now() - lastDeepDiveAt.getTime();
+  return elapsedMs < ONE_DAY_MS
+    ? new Date(lastDeepDiveAt.getTime() + ONE_DAY_MS).toISOString()
+    : null;
+}
+
 export default async function ResumeCheckPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
@@ -28,6 +38,8 @@ export default async function ResumeCheckPage() {
     createdAt: row.createdAt.toISOString(),
   }));
 
+  const deepDiveAvailableAt = computeDeepDiveAvailableAt(user.lastDeepDiveAt);
+
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-4 py-8">
       <div>
@@ -38,7 +50,11 @@ export default async function ResumeCheckPage() {
         </p>
       </div>
 
-      <ResumeCheckClient resumeText={user.resumeText} analyses={analyses} />
+      <ResumeCheckClient
+        resumeText={user.resumeText}
+        analyses={analyses}
+        deepDiveAvailableAt={deepDiveAvailableAt}
+      />
     </main>
   );
 }

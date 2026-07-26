@@ -14,7 +14,9 @@ export default function ResumeAnalysisCard({
       className="flex flex-col gap-2 rounded-2xl border border-border bg-card p-4 text-left transition hover:border-accent hover:bg-accent-soft/40"
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="font-medium">{analysis.jobTitle ?? "Job posting"}</span>
+        <span className="font-medium">
+          {analysis.jobTitle ? `Checked: ${analysis.jobTitle}` : "Past job posting"}
+        </span>
         <span className="shrink-0 text-xs text-foreground/40">
           {new Date(analysis.createdAt).toLocaleDateString()}
         </span>
