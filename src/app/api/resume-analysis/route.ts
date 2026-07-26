@@ -33,33 +33,51 @@ export async function POST(request: Request) {
   const strict = body.strict === true;
   const budgetFriendly = body.budgetFriendly === true;
 
-  try {
-    const result = await analyzeResumeMatch(resumeText, jobText, {
-      strict,
-      budgetFriendly,
-    });
-    const analysis = await prisma.resumeAnalysis.create({
-      data: {
-        authorId: user.id,
-        resumeText,
-        jobText,
-        jobTitle: result.jobTitle,
-        matchScore: result.matchScore,
-        matchingSkills: JSON.stringify(result.matchingSkills),
-        missingSkills: JSON.stringify(result.missingSkills),
-        advice: JSON.stringify(result.advice),
-      },
-    });
-    return NextResponse.json({ id: analysis.id });
-  } catch (err) {
-    if (err instanceof Error && err.message === "AI_REQUEST_FAILED") {
-      return NextResponse.json(
-        { error: "The AI analysis failed. Please try again." },
-        { status: 502 }
-      );
-    }
-    return NextResponse.json({ error: "Something went wrong." }, { status: 500 });
-  }
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      const send = (event: Record<string, unknown>) => {
+        controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
+      };
+
+      try {
+        const result = await analyzeResumeMatch(
+          resumeText,
+          jobText,
+          { strict, budgetFriendly },
+          (progress) => send({ type: "status", ...progress })
+        );
+        const analysis = await prisma.resumeAnalysis.create({
+          data: {
+            authorId: user.id,
+            resumeText,
+            jobText,
+            jobTitle: result.jobTitle,
+            matchScore: result.matchScore,
+            matchingSkills: JSON.stringify(result.matchingSkills),
+            missingSkills: JSON.stringify(result.missingSkills),
+            advice: JSON.stringify(result.advice),
+          },
+        });
+        send({ type: "done", id: analysis.id });
+      } catch (err) {
+        const message =
+          err instanceof Error && err.message === "AI_REQUEST_FAILED"
+            ? "The AI analysis failed. Please try again."
+            : "Something went wrong.";
+        send({ type: "error", message });
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "application/x-ndjson; charset=utf-8",
+      "Cache-Control": "no-cache, no-transform",
+    },
+  });
 }
 
 export async function GET() {

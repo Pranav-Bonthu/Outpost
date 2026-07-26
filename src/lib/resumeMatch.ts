@@ -59,6 +59,16 @@ export type ResumeMatchOptions = {
   budgetFriendly?: boolean;
 };
 
+export type ResumeMatchProgress = {
+  message: string;
+  percent: number;
+};
+
+// Vercel's maxDuration on this route is 60s; each real web search can take
+// ~15s serially, so this is capped low enough to leave headroom for the
+// generation step that follows (measured: 4 searches ~91s, 2 ~30s).
+const MAX_WEB_SEARCHES = 2;
+
 function buildSystemPrompt(options: ResumeMatchOptions) {
   const extra: string[] = [];
   if (options.strict) {
@@ -79,28 +89,52 @@ function buildSystemPrompt(options: ResumeMatchOptions) {
 export async function analyzeResumeMatch(
   resumeText: string,
   jobText: string,
-  options: ResumeMatchOptions = {}
+  options: ResumeMatchOptions = {},
+  onProgress?: (progress: ResumeMatchProgress) => void
 ): Promise<ResumeMatchResult> {
   const client = new Anthropic();
 
+  const stream = client.messages.stream({
+    model: "claude-sonnet-5",
+    max_tokens: 8000,
+    tools: [
+      { type: "web_search_20260209", name: "web_search", max_uses: MAX_WEB_SEARCHES },
+    ],
+    output_config: {
+      effort: "medium",
+      format: { type: "json_schema", schema: RESULT_SCHEMA },
+    },
+    system: buildSystemPrompt(options),
+    messages: [
+      {
+        role: "user",
+        content: `Resume:\n${resumeText}\n\nJob posting:\n${jobText}`,
+      },
+    ],
+  });
+
+  onProgress?.({ message: "Comparing your resume to the job posting…", percent: 10 });
+
+  let searchCount = 0;
+  let wroteWritingStatus = false;
+  stream.on("streamEvent", (event) => {
+    if (event.type !== "content_block_start") return;
+    const block = event.content_block;
+    if (block.type === "server_tool_use" && block.name === "web_search") {
+      searchCount += 1;
+      onProgress?.({
+        message: `Looking up a helpful resource (${searchCount}/${MAX_WEB_SEARCHES})…`,
+        percent: Math.min(10 + searchCount * 15, 70),
+      });
+    } else if (block.type === "text" && !wroteWritingStatus) {
+      wroteWritingStatus = true;
+      onProgress?.({ message: "Writing your personalized feedback…", percent: 85 });
+    }
+  });
+
   let response;
   try {
-    response = await client.messages.create({
-      model: "claude-sonnet-5",
-      max_tokens: 8000,
-      tools: [{ type: "web_search_20260209", name: "web_search", max_uses: 4 }],
-      output_config: {
-        effort: "medium",
-        format: { type: "json_schema", schema: RESULT_SCHEMA },
-      },
-      system: buildSystemPrompt(options),
-      messages: [
-        {
-          role: "user",
-          content: `Resume:\n${resumeText}\n\nJob posting:\n${jobText}`,
-        },
-      ],
-    });
+    response = await stream.finalMessage();
   } catch {
     throw new Error("AI_REQUEST_FAILED");
   }
@@ -123,6 +157,8 @@ export async function analyzeResumeMatch(
   } catch {
     throw new Error("AI_REQUEST_FAILED");
   }
+
+  onProgress?.({ message: "Saving your results…", percent: 95 });
 
   return {
     ...parsed,
