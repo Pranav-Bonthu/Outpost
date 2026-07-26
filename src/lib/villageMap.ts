@@ -1,4 +1,5 @@
 import type { BuildingType } from "@/generated/prisma/client";
+import type { Rarity } from "@/lib/wildlife/shared";
 
 export const WORLD_WIDTH = 1600;
 export const WORLD_HEIGHT = 1200;
@@ -55,6 +56,21 @@ export type PlayerMarkerData = {
   characterId: string | null;
   characterColor: string | null;
   spriteBaseUrl: string | null;
+};
+
+export type CollectionEntryData = {
+  species: string;
+  name: string;
+  description: string;
+  rarity: Rarity;
+  spriteUrl: string;
+  caught: boolean;
+  catcherName?: string;
+};
+
+export type VillageCollectionData = {
+  fish: CollectionEntryData[];
+  birds: CollectionEntryData[];
 };
 
 // Superset of the BUILDING_SLOTS cluster with margin, kept clear of the

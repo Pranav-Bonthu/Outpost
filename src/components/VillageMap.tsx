@@ -12,6 +12,8 @@ import BuildingUpgradePopover from "@/components/BuildingUpgradePopover";
 import CatchPopover from "@/components/CatchPopover";
 import PlayerCharacter from "@/components/PlayerCharacter";
 import VillageHud from "@/components/VillageHud";
+import CollectionButton from "@/components/CollectionButton";
+import CollectionPopover from "@/components/CollectionPopover";
 import {
   WORLD_WIDTH,
   WORLD_HEIGHT,
@@ -20,6 +22,7 @@ import {
   type ActivityMarkerData,
   type BuildingMarkerData,
   type PlayerMarkerData,
+  type VillageCollectionData,
 } from "@/lib/villageMap";
 import type { BuildingType } from "@/generated/prisma/client";
 
@@ -32,11 +35,13 @@ export default function VillageMap({
   groupPoints,
   players,
   activityMarkers,
+  collection,
 }: {
   markers: BuildingMarkerData[];
   groupPoints: { points: number; money: number };
   players: PlayerMarkerData[];
   activityMarkers: ActivityMarkerData[];
+  collection: VillageCollectionData;
 }) {
   const router = useRouter();
   const [active, setActive] = useState<{
@@ -47,6 +52,7 @@ export default function VillageMap({
     activity: ActivityMarkerData;
     rect: DOMRect;
   } | null>(null);
+  const [collectionOpen, setCollectionOpen] = useState(false);
   const [fitScale, setFitScale] = useState<number | null>(null);
   const [dragPositions, setDragPositions] = useState<
     Partial<Record<BuildingType, { x: number; y: number }>>
@@ -207,6 +213,15 @@ export default function VillageMap({
       </TransformWrapper>
 
       <VillageHud points={groupPoints.points} money={groupPoints.money} />
+
+      <CollectionButton onClick={() => setCollectionOpen(true)} />
+
+      {collectionOpen && (
+        <CollectionPopover
+          collection={collection}
+          onClose={() => setCollectionOpen(false)}
+        />
+      )}
 
       {active && (
         <BuildingUpgradePopover

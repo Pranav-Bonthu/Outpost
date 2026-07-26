@@ -13,6 +13,23 @@ const STATUS_LABEL: Record<string, string> = {
   missed: "Missed",
 };
 
+const NOTE_STYLES = [
+  "bg-yellow-100 dark:bg-yellow-900/40",
+  "bg-pink-100 dark:bg-pink-900/40",
+  "bg-sky-100 dark:bg-sky-900/40",
+  "bg-lime-100 dark:bg-lime-900/40",
+];
+
+const ROTATIONS = [-3, -1.5, 1, 2.5, -2];
+
+function hashId(id: string) {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+  }
+  return hash;
+}
+
 type GoalWithAuthor = {
   id: string;
   description: string;
@@ -28,15 +45,26 @@ export default function GoalCard({
   goal: GoalWithAuthor;
   currentUserId: string;
 }) {
+  const hash = hashId(goal.id);
+  const rotation = ROTATIONS[hash % ROTATIONS.length];
+  const noteStyle = NOTE_STYLES[hash % NOTE_STYLES.length];
+
   return (
-    <div className="flex flex-col gap-2 rounded-2xl border border-border bg-card p-4">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <span className="font-medium">{goal.author.name}</span>
-          <span className="rounded-full bg-accent-soft px-2 py-0.5 text-xs font-medium capitalize text-accent">
-            {goal.period}
-          </span>
-        </div>
+    <div
+      className={`relative flex flex-col gap-2 rounded-lg p-4 pt-5 shadow-md ${noteStyle}`}
+      style={{ transform: `rotate(${rotation}deg)` }}
+    >
+      <span
+        className="absolute -top-3 left-1/2 -translate-x-1/2 text-xl drop-shadow-sm"
+        aria-hidden
+      >
+        📌
+      </span>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="font-medium">{goal.author.name}</span>
+        <span className="rounded-full bg-accent-soft px-2 py-0.5 text-xs font-medium capitalize text-accent">
+          {goal.period}
+        </span>
         <span
           className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[goal.status]}`}
         >

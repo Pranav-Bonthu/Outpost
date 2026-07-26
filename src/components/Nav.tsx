@@ -22,28 +22,10 @@ export default async function Nav() {
               Feed
             </Link>
             <Link
-              href="/goals"
-              className="rounded-full px-3 py-1.5 hover:bg-accent-soft"
-            >
-              Goals
-            </Link>
-            <Link
               href="/village"
               className="rounded-full px-3 py-1.5 hover:bg-accent-soft"
             >
               Village
-            </Link>
-            <Link
-              href="/collection"
-              className="rounded-full px-3 py-1.5 hover:bg-accent-soft"
-            >
-              Collection
-            </Link>
-            <Link
-              href="/members"
-              className="rounded-full px-3 py-1.5 hover:bg-accent-soft"
-            >
-              Members
             </Link>
           </nav>
         )}
@@ -61,12 +43,6 @@ export default async function Nav() {
               className="rounded-lg px-3 py-2 text-sm hover:bg-accent-soft"
             >
               Resume check
-            </Link>
-            <Link
-              href="/members"
-              className="rounded-lg px-3 py-2 text-sm hover:bg-accent-soft"
-            >
-              Members
             </Link>
             <form
               action={async () => {

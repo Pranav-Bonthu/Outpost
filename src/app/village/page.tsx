@@ -15,6 +15,9 @@ import {
   spritePath,
 } from "@/lib/village";
 import { characterSpriteBaseUrl } from "@/lib/villageCharacters";
+import { FISH_INFO, fishSpritePath } from "@/lib/wildlife/fish";
+import { BIRD_INFO, birdSpritePath } from "@/lib/wildlife/birds";
+import type { FishSpecies, BirdSpecies } from "@/generated/prisma/client";
 import {
   BUILDING_SLOTS,
   POND_SLOT,
@@ -22,6 +25,7 @@ import {
   type ActivityMarkerData,
   type BuildingMarkerData,
   type PlayerMarkerData,
+  type VillageCollectionData,
 } from "@/lib/villageMap";
 
 export default async function VillagePage() {
@@ -29,12 +33,60 @@ export default async function VillagePage() {
   if (!user) redirect("/login");
   if (!user.groupId) redirect("/group/new");
 
-  const { groupPoints, byType } = await getVillageState(user.groupId);
+  const [{ groupPoints, byType }, members, fishCatches, birdSightings] =
+    await Promise.all([
+      getVillageState(user.groupId),
+      prisma.user.findMany({
+        where: { groupId: user.groupId },
+        orderBy: { name: "asc" },
+      }),
+      prisma.fishCatch.findMany({
+        where: { groupId: user.groupId },
+        include: { catcher: { select: { name: true } } },
+      }),
+      prisma.birdSighting.findMany({
+        where: { groupId: user.groupId },
+        include: { catcher: { select: { name: true } } },
+      }),
+    ]);
 
-  const members = await prisma.user.findMany({
-    where: { groupId: user.groupId },
-    orderBy: { name: "asc" },
-  });
+  const caughtFish = new Map(
+    fishCatches.map((c) => [c.species, { catcherName: c.catcher.name }])
+  );
+  const caughtBirds = new Map(
+    birdSightings.map((c) => [c.species, { catcherName: c.catcher.name }])
+  );
+
+  const collection: VillageCollectionData = {
+    fish: (Object.entries(FISH_INFO) as [FishSpecies, (typeof FISH_INFO)[FishSpecies]][]).map(
+      ([species, info]) => {
+        const caught = caughtFish.get(species);
+        return {
+          species,
+          name: info.name,
+          description: info.description,
+          rarity: info.rarity,
+          spriteUrl: fishSpritePath(species),
+          caught: !!caught,
+          catcherName: caught?.catcherName,
+        };
+      }
+    ),
+    birds: (Object.entries(BIRD_INFO) as [BirdSpecies, (typeof BIRD_INFO)[BirdSpecies]][]).map(
+      ([species, info]) => {
+        const caught = caughtBirds.get(species);
+        return {
+          species,
+          name: info.name,
+          description: info.description,
+          rarity: info.rarity,
+          spriteUrl: birdSpritePath(species),
+          caught: !!caught,
+          catcherName: caught?.catcherName,
+        };
+      }
+    ),
+  };
 
   const players: PlayerMarkerData[] = members.map((member) => ({
     userId: member.id,
@@ -116,6 +168,7 @@ export default async function VillagePage() {
         groupPoints={groupPoints}
         players={players}
         activityMarkers={activityMarkers}
+        collection={collection}
       />
     </main>
   );
