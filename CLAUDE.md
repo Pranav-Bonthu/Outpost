@@ -81,14 +81,25 @@ Prisma's migration engine understands (only the `@prisma/adapter-libsql`
 `scripts/turso-migrate.mjs` applies each `prisma/migrations/*/migration.sql`
 file directly over the same libSQL client the app uses, tracking
 applied state in a `_prisma_migrations` bookkeeping table so re-runs
-skip what's already applied:
+skip what's already applied.
+
+This runs **automatically** as the last step of `npm run build`
+(`scripts/turso-migrate-on-deploy.mjs` — a thin guard that only invokes
+`turso-migrate.mjs` when `DATABASE_URL` is a `libsql://` URL, so local
+builds against `dev.db` are unaffected), which means every Vercel
+deployment applies its own pending migrations before going live — a
+migration can no longer ship without being applied to production, and
+if the migration itself fails, the build fails and Vercel keeps the
+previous deployment live instead of promoting broken code. (This was
+added after exactly that gap caused a production outage: a migration
+was committed and deployed but never applied to Turso, breaking every
+authenticated page.) To run it by hand — e.g. against a freshly
+provisioned Turso database before the first deploy, or to debug —
+invoke the underlying script directly:
 
 ```bash
 DATABASE_URL="libsql://<db>.turso.io" TURSO_AUTH_TOKEN="<token>" node scripts/turso-migrate.mjs
 ```
-
-Run this once after provisioning Turso, and again after every future
-migration is committed.
 
 **Data model / v1 constraint:** a `User` belongs to at most one `Group`
 (single-group membership, invite-code join, no multi-group support).
