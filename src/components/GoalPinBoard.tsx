@@ -5,6 +5,9 @@ type GoalWithAuthor = {
   description: string;
   period: string;
   status: string;
+  dueDate: Date | string | null;
+  color: string | null;
+  progress: number;
   author: { id: string; name: string };
 };
 

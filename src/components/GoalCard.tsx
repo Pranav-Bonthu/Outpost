@@ -1,4 +1,5 @@
 import GoalStatusButtons from "@/components/GoalStatusButtons";
+import { GOAL_COLOR_CATALOG } from "@/lib/goalColors";
 
 const STATUS_STYLES: Record<string, string> = {
   in_progress:
@@ -13,12 +14,9 @@ const STATUS_LABEL: Record<string, string> = {
   missed: "Missed",
 };
 
-const NOTE_STYLES = [
-  "bg-yellow-100 dark:bg-yellow-900/40",
-  "bg-pink-100 dark:bg-pink-900/40",
-  "bg-sky-100 dark:bg-sky-900/40",
-  "bg-lime-100 dark:bg-lime-900/40",
-];
+const NOTE_STYLE_VALUES = Object.values(GOAL_COLOR_CATALOG).map(
+  (c) => c.noteClass
+);
 
 const ROTATIONS = [-3, -1.5, 1, 2.5, -2];
 
@@ -30,11 +28,22 @@ function hashId(id: string) {
   return hash;
 }
 
+function formatDueDate(date: Date | string) {
+  const d = typeof date === "string" ? new Date(date) : date;
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+  }).format(d);
+}
+
 type GoalWithAuthor = {
   id: string;
   description: string;
   period: string;
   status: string;
+  dueDate: Date | string | null;
+  color: string | null;
+  progress: number;
   author: { id: string; name: string };
 };
 
@@ -47,7 +56,9 @@ export default function GoalCard({
 }) {
   const hash = hashId(goal.id);
   const rotation = ROTATIONS[hash % ROTATIONS.length];
-  const noteStyle = NOTE_STYLES[hash % NOTE_STYLES.length];
+  const noteStyle =
+    (goal.color && GOAL_COLOR_CATALOG[goal.color]?.noteClass) ||
+    NOTE_STYLE_VALUES[hash % NOTE_STYLE_VALUES.length];
 
   return (
     <div
@@ -70,8 +81,24 @@ export default function GoalCard({
         >
           {STATUS_LABEL[goal.status]}
         </span>
+        {goal.dueDate && (
+          <span className="text-xs text-foreground/60">
+            Due {formatDueDate(goal.dueDate)}
+          </span>
+        )}
       </div>
       <p className="text-sm leading-relaxed">{goal.description}</p>
+      <div>
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
+          <div
+            className="h-full rounded-full bg-accent"
+            style={{ width: `${goal.progress}%` }}
+          />
+        </div>
+        <span className="text-[11px] text-foreground/60">
+          {goal.progress}% complete
+        </span>
+      </div>
       {goal.author.id === currentUserId && (
         <div className="pt-1">
           <GoalStatusButtons goalId={goal.id} status={goal.status} />

@@ -30,8 +30,14 @@ export async function POST(request: Request) {
     );
   }
 
+  const strict = body.strict === true;
+  const budgetFriendly = body.budgetFriendly === true;
+
   try {
-    const result = await analyzeResumeMatch(resumeText, jobText);
+    const result = await analyzeResumeMatch(resumeText, jobText, {
+      strict,
+      budgetFriendly,
+    });
     const analysis = await prisma.resumeAnalysis.create({
       data: {
         authorId: user.id,

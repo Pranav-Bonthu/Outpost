@@ -1,16 +1,12 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
-import { awardGroupPoints, POINTS_PER_POST } from "@/lib/points";
-
-const VALID_TAGS = [
-  "Application",
-  "Referral",
-  "Certification",
-  "Project",
-  "Networking",
-  "Other",
-] as const;
+import {
+  awardGroupPoints,
+  POINTS_PER_POST,
+  POST_GOAL_PROGRESS_STEP,
+} from "@/lib/points";
+import { POST_TAGS as VALID_TAGS } from "@/lib/postTags";
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
@@ -39,15 +35,54 @@ export async function POST(request: Request) {
     );
   }
 
-  const post = await prisma.post.create({
-    data: {
-      text,
-      tag,
-      optionalLink,
-      authorId: user.id,
-      groupId: user.groupId,
-    },
-  });
+  const goalId =
+    typeof body.goalId === "string" && body.goalId ? body.goalId : null;
+
+  let goal = null;
+  if (goalId) {
+    goal = await prisma.goal.findUnique({ where: { id: goalId } });
+    if (!goal || goal.groupId !== user.groupId) {
+      return NextResponse.json({ error: "Goal not found." }, { status: 404 });
+    }
+    if (goal.authorId !== user.id) {
+      return NextResponse.json(
+        { error: "You can only link your own goals." },
+        { status: 403 }
+      );
+    }
+    if (goal.status !== "in_progress") {
+      return NextResponse.json(
+        { error: "Goal is not in progress." },
+        { status: 400 }
+      );
+    }
+  }
+
+  const [post] = await prisma.$transaction([
+    prisma.post.create({
+      data: {
+        text,
+        tag,
+        optionalLink,
+        goalId,
+        authorId: user.id,
+        groupId: user.groupId,
+      },
+    }),
+    ...(goal
+      ? [
+          prisma.goal.update({
+            where: { id: goal.id },
+            data: {
+              progress: Math.min(
+                100,
+                goal.progress + POST_GOAL_PROGRESS_STEP
+              ),
+            },
+          }),
+        ]
+      : []),
+  ]);
 
   await awardGroupPoints(user.groupId, POINTS_PER_POST);
 

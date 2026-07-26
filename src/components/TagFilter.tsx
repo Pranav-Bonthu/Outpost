@@ -1,13 +1,5 @@
 import Link from "next/link";
-
-const TAGS = [
-  "Application",
-  "Referral",
-  "Certification",
-  "Project",
-  "Networking",
-  "Other",
-] as const;
+import { POST_TAGS } from "@/lib/postTags";
 
 export default function TagFilter({ activeTag }: { activeTag?: string }) {
   return (
@@ -22,7 +14,7 @@ export default function TagFilter({ activeTag }: { activeTag?: string }) {
       >
         All
       </Link>
-      {TAGS.map((tag) => (
+      {POST_TAGS.map((tag) => (
         <Link
           key={tag}
           href={`/feed?tag=${tag}`}

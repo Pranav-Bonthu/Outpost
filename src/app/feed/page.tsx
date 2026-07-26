@@ -7,15 +7,7 @@ import TagFilter from "@/components/TagFilter";
 import MemberList from "@/components/MemberList";
 import GoalForm from "@/components/GoalForm";
 import GoalPinBoard from "@/components/GoalPinBoard";
-
-const VALID_TAGS = [
-  "Application",
-  "Referral",
-  "Certification",
-  "Project",
-  "Networking",
-  "Other",
-];
+import { POST_TAGS } from "@/lib/postTags";
 
 export default async function FeedPage({
   searchParams,
@@ -27,7 +19,9 @@ export default async function FeedPage({
   if (!user.groupId) redirect("/group/new");
 
   const { tag } = await searchParams;
-  const activeTag = VALID_TAGS.includes(tag ?? "") ? tag : undefined;
+  const activeTag = (POST_TAGS as readonly string[]).includes(tag ?? "")
+    ? tag
+    : undefined;
 
   const [posts, members, goals] = await Promise.all([
     prisma.post.findMany({
@@ -38,6 +32,7 @@ export default async function FeedPage({
       orderBy: { createdAt: "desc" },
       include: {
         author: { select: { id: true, name: true } },
+        reactions: true,
         comments: {
           orderBy: { createdAt: "asc" },
           include: { author: { select: { id: true, name: true } } },
@@ -55,6 +50,10 @@ export default async function FeedPage({
     }),
   ]);
 
+  const myOpenGoals = goals
+    .filter((g) => g.authorId === user.id && g.status === "in_progress")
+    .map((g) => ({ id: g.id, description: g.description }));
+
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[200px_minmax(0,1fr)_300px] lg:items-start">
@@ -71,7 +70,7 @@ export default async function FeedPage({
             </p>
           </div>
 
-          <PostForm />
+          <PostForm goals={myOpenGoals} />
 
           <TagFilter activeTag={activeTag} />
 
@@ -83,7 +82,7 @@ export default async function FeedPage({
               </p>
             )}
             {posts.map((post) => (
-              <PostCard key={post.id} post={post} />
+              <PostCard key={post.id} post={post} currentUserId={user.id} />
             ))}
           </div>
         </div>

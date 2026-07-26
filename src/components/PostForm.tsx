@@ -2,21 +2,18 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { POST_TAGS, type PostTagName } from "@/lib/postTags";
 
-const TAGS = [
-  "Application",
-  "Referral",
-  "Certification",
-  "Project",
-  "Networking",
-  "Other",
-] as const;
-
-export default function PostForm() {
+export default function PostForm({
+  goals = [],
+}: {
+  goals?: { id: string; description: string }[];
+}) {
   const router = useRouter();
   const [text, setText] = useState("");
-  const [tag, setTag] = useState<(typeof TAGS)[number]>("Application");
+  const [tag, setTag] = useState<PostTagName>("Application");
   const [optionalLink, setOptionalLink] = useState("");
+  const [goalId, setGoalId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -28,7 +25,12 @@ export default function PostForm() {
     const res = await fetch("/api/posts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, tag, optionalLink }),
+      body: JSON.stringify({
+        text,
+        tag,
+        optionalLink,
+        goalId: goalId || null,
+      }),
     });
 
     if (!res.ok) {
@@ -40,6 +42,7 @@ export default function PostForm() {
 
     setText("");
     setOptionalLink("");
+    setGoalId("");
     setLoading(false);
     router.refresh();
   }
@@ -51,34 +54,43 @@ export default function PostForm() {
     >
       <textarea
         className="min-h-20 resize-none rounded-lg border border-border bg-transparent px-3 py-2 outline-none focus:border-accent"
-        placeholder="What did you do today? Applied somewhere, got a referral, finished a course…"
+        placeholder="Share an update…"
         value={text}
         onChange={(e) => setText(e.target.value)}
         required
       />
-      <div className="flex flex-wrap gap-2">
-        {TAGS.map((t) => (
-          <button
-            type="button"
-            key={t}
-            onClick={() => setTag(t)}
-            className={`rounded-full border px-3 py-1 text-xs font-medium ${
-              tag === t
-                ? "border-accent bg-accent text-white"
-                : "border-border text-foreground/70 hover:bg-accent-soft"
-            }`}
-          >
+      <select
+        value={tag}
+        onChange={(e) => setTag(e.target.value as PostTagName)}
+        className="rounded-lg border border-border bg-transparent px-3 py-2 text-sm outline-none focus:border-accent"
+      >
+        {POST_TAGS.map((t) => (
+          <option key={t} value={t}>
             {t}
-          </button>
+          </option>
         ))}
-      </div>
+      </select>
       <input
         type="text"
         className="rounded-lg border border-border bg-transparent px-3 py-2 text-sm outline-none focus:border-accent"
-        placeholder="Optional link (job posting, cert, project…)"
+        placeholder="Optional link"
         value={optionalLink}
         onChange={(e) => setOptionalLink(e.target.value)}
       />
+      {goals.length > 0 && (
+        <select
+          value={goalId}
+          onChange={(e) => setGoalId(e.target.value)}
+          className="rounded-lg border border-border bg-transparent px-3 py-2 text-sm outline-none focus:border-accent"
+        >
+          <option value="">No linked goal</option>
+          {goals.map((g) => (
+            <option key={g.id} value={g.id}>
+              {g.description}
+            </option>
+          ))}
+        </select>
+      )}
       {error && <p className="text-sm text-red-600">{error}</p>}
       <button
         type="submit"

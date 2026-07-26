@@ -1,16 +1,6 @@
 import CommentForm from "@/components/CommentForm";
-
-const TAG_STYLES: Record<string, string> = {
-  Application: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300",
-  Referral:
-    "bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300",
-  Certification:
-    "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
-  Project:
-    "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
-  Networking: "bg-pink-100 text-pink-800 dark:bg-pink-950 dark:text-pink-300",
-  Other: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
-};
+import ReactionBar from "@/components/ReactionBar";
+import { POST_TAG_BADGE_STYLES, POST_TAG_CARD_STYLES } from "@/lib/postTags";
 
 function isSafeHttpUrl(value: string) {
   try {
@@ -51,6 +41,7 @@ type PostWithRelations = {
   optionalLink: string | null;
   createdAt: Date;
   author: { id: string; name: string };
+  reactions: { id: string; emoji: string; userId: string }[];
   comments: {
     id: string;
     text: string;
@@ -59,14 +50,29 @@ type PostWithRelations = {
   }[];
 };
 
-export default function PostCard({ post }: { post: PostWithRelations }) {
+export default function PostCard({
+  post,
+  currentUserId,
+}: {
+  post: PostWithRelations;
+  currentUserId: string;
+}) {
+  const cardStyle =
+    POST_TAG_CARD_STYLES[post.tag as keyof typeof POST_TAG_CARD_STYLES] ??
+    POST_TAG_CARD_STYLES.Other;
+  const badgeStyle =
+    POST_TAG_BADGE_STYLES[post.tag as keyof typeof POST_TAG_BADGE_STYLES] ??
+    POST_TAG_BADGE_STYLES.Other;
+
   return (
-    <article className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
+    <article
+      className={`flex flex-col gap-3 rounded-2xl border border-border p-4 ${cardStyle}`}
+    >
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <span className="font-medium">{post.author.name}</span>
           <span
-            className={`rounded-full px-2 py-0.5 text-xs font-medium ${TAG_STYLES[post.tag] ?? TAG_STYLES.Other}`}
+            className={`rounded-full px-2 py-0.5 text-xs font-medium ${badgeStyle}`}
           >
             {post.tag}
           </span>
@@ -90,6 +96,12 @@ export default function PostCard({ post }: { post: PostWithRelations }) {
           {post.optionalLink}
         </a>
       )}
+
+      <ReactionBar
+        postId={post.id}
+        reactions={post.reactions}
+        currentUserId={currentUserId}
+      />
 
       <div className="flex flex-col gap-2 border-t border-border pt-3">
         {post.comments.map((comment) => (

@@ -54,9 +54,32 @@ For each piece of advice, if a specific certification, course, or practice proje
 
 Respond with only the JSON object described by the schema — no other text before or after it.`;
 
+export type ResumeMatchOptions = {
+  strict?: boolean;
+  budgetFriendly?: boolean;
+};
+
+function buildSystemPrompt(options: ResumeMatchOptions) {
+  const extra: string[] = [];
+  if (options.strict) {
+    extra.push(
+      "Be a highly critical, no-nonsense reviewer. Assume the candidate is competing against many strong applicants — score conservatively, call out weaknesses bluntly, and do not soften the feedback."
+    );
+  }
+  if (options.budgetFriendly) {
+    extra.push(
+      "When recommending certifications, courses, or practice projects, only suggest free or low-cost (under $50) options. Do not recommend expensive paid courses, bootcamps, or subscriptions."
+    );
+  }
+  return extra.length > 0
+    ? `${SYSTEM_PROMPT}\n\n${extra.join("\n")}`
+    : SYSTEM_PROMPT;
+}
+
 export async function analyzeResumeMatch(
   resumeText: string,
-  jobText: string
+  jobText: string,
+  options: ResumeMatchOptions = {}
 ): Promise<ResumeMatchResult> {
   const client = new Anthropic();
 
@@ -70,7 +93,7 @@ export async function analyzeResumeMatch(
         effort: "medium",
         format: { type: "json_schema", schema: RESULT_SCHEMA },
       },
-      system: SYSTEM_PROMPT,
+      system: buildSystemPrompt(options),
       messages: [
         {
           role: "user",
