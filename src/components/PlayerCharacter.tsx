@@ -25,6 +25,13 @@ function randomPointIn(bounds: Bounds) {
   };
 }
 
+function centerOf(bounds: Bounds) {
+  return {
+    x: (bounds.minX + bounds.maxX) / 2,
+    y: (bounds.minY + bounds.maxY) / 2,
+  };
+}
+
 export default function PlayerCharacter({
   player,
   bounds,
@@ -32,9 +39,11 @@ export default function PlayerCharacter({
   player: PlayerMarkerData;
   bounds: Bounds;
 }) {
-  const [pos, setPos] = useState(() => randomPointIn(bounds));
+  // Spawn deterministically at the bounds center for the SSR/hydration
+  // render (Math.random() here would produce a server/client mismatch),
+  // then jump to a random point once mounted, client-side only.
+  const [pos, setPos] = useState(() => centerOf(bounds));
   const [direction, setDirection] = useState<CharacterDirection>("down");
-  const [facing, setFacing] = useState<"left" | "right">("right");
   const [frame, setFrame] = useState(0);
   const [phase, setPhase] = useState<"walking" | "pausing">("walking");
 
@@ -44,7 +53,7 @@ export default function PlayerCharacter({
   const stateRef = useRef({
     x: pos.x,
     y: pos.y,
-    target: randomPointIn(bounds),
+    target: centerOf(bounds),
     phase: "walking" as "walking" | "pausing",
     dwellUntil: 0,
     lastFrameAt: 0,
@@ -52,6 +61,14 @@ export default function PlayerCharacter({
   });
 
   useEffect(() => {
+    // Randomize spawn + first target now that we're safely past hydration.
+    // Not calling setPos here directly (the rAF loop's first tick does that)
+    // avoids the cascading-render footgun of setState synchronously in an effect.
+    const spawn = randomPointIn(bounds);
+    stateRef.current.x = spawn.x;
+    stateRef.current.y = spawn.y;
+    stateRef.current.target = randomPointIn(bounds);
+
     let raf: number;
     let lastTime = performance.now();
 
@@ -83,8 +100,7 @@ export default function PlayerCharacter({
           setPos({ x: s.x, y: s.y });
 
           if (Math.abs(dx) > Math.abs(dy)) {
-            setDirection("side");
-            setFacing(dx > 0 ? "right" : "left");
+            setDirection(dx > 0 ? "right" : "left");
           } else {
             setDirection(dy > 0 ? "down" : "up");
           }
@@ -129,10 +145,6 @@ export default function PlayerCharacter({
           className="pointer-events-none [image-rendering:pixelated] drop-shadow-md"
           style={{
             filter: tint && tint.filter !== "none" ? tint.filter : undefined,
-            transform:
-              direction === "side" && facing === "left"
-                ? "scaleX(-1)"
-                : undefined,
           }}
         />
       ) : (

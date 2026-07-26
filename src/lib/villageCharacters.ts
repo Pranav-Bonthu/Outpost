@@ -43,10 +43,9 @@ export const CHARACTER_TINTS: Record<
   },
 };
 
-export type CharacterDirection = "down" | "up" | "side";
+export type CharacterDirection = "down" | "up" | "left" | "right";
 
-// Frames per walk-cycle direction. Placeholder until real PixelLab-generated
-// art confirms the actual frame count — adjust here once known.
+// Frames per walk-cycle direction (PixelLab's "walking-4-frames" template).
 export const CHARACTER_FRAME_COUNT = 4;
 
 export function characterSpriteBaseUrl(id: string | null | undefined) {

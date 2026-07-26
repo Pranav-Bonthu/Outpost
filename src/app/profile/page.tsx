@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import AvatarUploadForm from "@/components/AvatarUploadForm";
 import ProfileForm from "@/components/ProfileForm";
+import CharacterPicker from "@/components/CharacterPicker";
 import EmailForm from "@/components/EmailForm";
 import PasswordForm from "@/components/PasswordForm";
 
@@ -20,6 +21,10 @@ export default async function ProfilePage() {
 
       <AvatarUploadForm name={user.name} avatarPath={user.avatarPath} />
       <ProfileForm initialName={user.name} initialBio={user.bio} />
+      <CharacterPicker
+        initialCharacterId={user.characterId}
+        initialCharacterColor={user.characterColor}
+      />
 
       <div>
         <h2 className="text-sm font-semibold text-foreground/70">Account</h2>

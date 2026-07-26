@@ -198,3 +198,47 @@ a single shiny gold coin with an embossed symbol, pixel art game asset, warm coz
 ```
 (Both: `view: "high top-down"`, `detail: "medium detail"`, `shading:
 "basic shading"`, `outline: "single color outline"`.)
+
+## Village characters (`public/sprites/characters/<slug>/`)
+
+Walking pixel-art avatars for the village map (`src/components/PlayerCharacter.tsx`),
+picked per-member in the profile screen (`src/components/CharacterPicker.tsx`).
+Unlike everything above, these are generated via PixelLab's dedicated
+character pipeline (`create_character` + `animate_character`), not
+`create_map_object` — that pipeline natively produces a rotating,
+animatable humanoid instead of a single static image.
+
+**Generation**: `create_character(mode="standard", n_directions=4,
+size=64, view="high top-down", detail="medium detail", shading="basic
+shading", outline="single color outline")` per character (1 generation),
+then `animate_character(template_animation_id="walking-4-frames")` (4
+generations, one per direction). Standard 4-direction mode returns
+south/east/north/west natively — used directly as down/right/up/left, no
+CSS-mirroring needed (unlike the original placeholder pass, which assumed
+only one side sprite and flipped it).
+
+**File layout**, one PNG per direction per frame:
+```
+public/sprites/characters/<slug>/down/frame-1..4.png   (south)
+public/sprites/characters/<slug>/up/frame-1..4.png     (north)
+public/sprites/characters/<slug>/left/frame-1..4.png   (west)
+public/sprites/characters/<slug>/right/frame-1..4.png  (east)
+```
+
+**Generate order**: did both initial characters (Wanderer, Scout) before
+batching further presets, comparing them against the existing
+building/HUD art side by side — same "catch style drift early" reasoning
+as the building ladders.
+
+### Characters
+
+```
+Wanderer (wanderer): a friendly traveling wanderer with a rustic hooded cloak, a small backpack, and worn leather boots, warm cozy color palette (amber, terracotta, cream, soft browns), charming style like Stardew Valley village folk.
+
+Scout (scout): a nimble scout wearing a green hooded travel cloak with a leather satchel and a small pouch belt, warm cozy color palette (amber, terracotta, cream, soft browns) with mossy green accents, charming style like Stardew Valley village folk.
+```
+
+Color variants are not separate art — `CHARACTER_TINTS` in
+`src/lib/villageCharacters.ts` applies a CSS `filter` (hue-rotate +
+saturate) to the base sprite at render time instead of pre-baking a
+palette-swapped PNG per character per color.
