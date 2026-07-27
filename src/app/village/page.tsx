@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import LiveRefresh from "@/components/LiveRefresh";
 import VillageMap from "@/components/VillageMap";
 import {
   ALL_BUILDING_TYPES,
@@ -163,6 +164,7 @@ export default async function VillagePage() {
 
   return (
     <main className="flex flex-1 min-h-0">
+      <LiveRefresh />
       <VillageMap
         markers={markers}
         groupPoints={groupPoints}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function ResumeForm({
@@ -9,10 +9,40 @@ export default function ResumeForm({
   initialResumeText: string | null;
 }) {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [resumeText, setResumeText] = useState(initialResumeText ?? "");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [extracting, setExtracting] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setError(null);
+    setSaved(false);
+    setExtracting(true);
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await fetch("/api/profile/resume/extract-pdf", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await res.json();
+    setExtracting(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+
+    if (!res.ok) {
+      setError(data.error ?? "Something went wrong.");
+      return;
+    }
+
+    setResumeText(data.text);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -43,17 +73,36 @@ export default function ResumeForm({
       className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4"
     >
       <label className="flex flex-col gap-1 text-sm">
-        Resume
-        <span className="text-xs font-normal text-foreground/60">
-          Saved here once, it&apos;ll auto-fill on the resume check page.
-        </span>
+        <div className="flex items-center justify-between gap-2">
+          <span>
+            Resume
+            <span className="ml-1 text-xs font-normal text-foreground/60">
+              Saved here once, it&apos;ll auto-fill on the resume check page.
+            </span>
+          </span>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={extracting}
+            className="shrink-0 rounded-full border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent-soft disabled:opacity-60"
+          >
+            {extracting ? "Reading PDF…" : "Upload PDF"}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/pdf"
+            onChange={handleFileChange}
+            className="hidden"
+          />
+        </div>
         <textarea
           value={resumeText}
           onChange={(e) => {
             setResumeText(e.target.value);
             setSaved(false);
           }}
-          placeholder="Paste your resume text…"
+          placeholder="Paste your resume text, or upload a PDF above…"
           className="min-h-32 rounded-lg border border-border bg-transparent px-3 py-2 text-sm outline-none focus:border-accent"
         />
       </label>

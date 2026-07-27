@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import LiveRefresh from "@/components/LiveRefresh";
 import PostForm from "@/components/PostForm";
 import PostCard from "@/components/PostCard";
 import TagFilter from "@/components/TagFilter";
@@ -56,6 +57,7 @@ export default async function FeedPage({
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
+      <LiveRefresh />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[200px_minmax(0,1fr)_300px] lg:items-start">
         <aside className="order-2 lg:order-1 lg:sticky lg:top-20">
           <MemberList members={members} currentUserId={user.id} />
@@ -77,8 +79,9 @@ export default async function FeedPage({
           <div className="flex flex-col gap-4">
             {posts.length === 0 && (
               <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-foreground/50">
-                No updates yet{activeTag ? ` tagged "${activeTag}"` : ""}. Be
-                the first to share something.
+                No updates yet{activeTag ? ` tagged "${activeTag}"` : ""}. This
+                is where your group shares job-search wins, setbacks, and
+                progress — post the first one above.
               </p>
             )}
             {posts.map((post) => (

@@ -50,11 +50,17 @@ export default function PostForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4"
+      className="flex flex-col gap-3 rounded-2xl border border-accent/40 bg-accent-soft p-4"
     >
+      <div>
+        <h2 className="text-sm font-semibold">Share an update</h2>
+        <p className="text-xs text-foreground/60">
+          Post a win, a setback, or progress — earns the group +10 pts.
+        </p>
+      </div>
       <textarea
-        className="min-h-20 resize-none rounded-lg border border-border bg-transparent px-3 py-2 outline-none focus:border-accent"
-        placeholder="Share an update…"
+        className="min-h-20 resize-none rounded-lg border border-border bg-background px-3 py-2 outline-none focus:border-accent"
+        placeholder="What's going on with your job search?"
         value={text}
         onChange={(e) => setText(e.target.value)}
         required
@@ -62,7 +68,7 @@ export default function PostForm({
       <select
         value={tag}
         onChange={(e) => setTag(e.target.value as PostTagName)}
-        className="rounded-lg border border-border bg-transparent px-3 py-2 text-sm outline-none focus:border-accent"
+        className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-accent"
       >
         {POST_TAGS.map((t) => (
           <option key={t} value={t}>
@@ -72,7 +78,7 @@ export default function PostForm({
       </select>
       <input
         type="text"
-        className="rounded-lg border border-border bg-transparent px-3 py-2 text-sm outline-none focus:border-accent"
+        className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-accent"
         placeholder="Optional link"
         value={optionalLink}
         onChange={(e) => setOptionalLink(e.target.value)}
@@ -81,7 +87,7 @@ export default function PostForm({
         <select
           value={goalId}
           onChange={(e) => setGoalId(e.target.value)}
-          className="rounded-lg border border-border bg-transparent px-3 py-2 text-sm outline-none focus:border-accent"
+          className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-accent"
         >
           <option value="">No linked goal</option>
           {goals.map((g) => (
@@ -97,7 +103,7 @@ export default function PostForm({
         disabled={loading}
         className="self-end rounded-full bg-accent px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
       >
-        {loading ? "Posting…" : "Post update (+10 pts)"}
+        {loading ? "Posting…" : "Post update"}
       </button>
     </form>
   );
