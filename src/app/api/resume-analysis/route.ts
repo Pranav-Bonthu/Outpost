@@ -72,6 +72,7 @@ export async function POST(request: Request) {
             missingSkills: result.missingSkills,
             advice: result.advice,
             createdAt: analysis.createdAt,
+            coverLetter: null,
           },
         });
       } catch (err) {

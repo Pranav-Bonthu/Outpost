@@ -44,6 +44,12 @@ export default function ResumeAnalysisCard({
         {analysis.advice.length} way{analysis.advice.length === 1 ? "" : "s"}{" "}
         to close the gap →
       </p>
+
+      {analysis.coverLetter && (
+        <span className="w-fit rounded-full bg-accent-soft px-2 py-0.5 text-xs font-medium text-accent">
+          ✍️ Cover letter drafted
+        </span>
+      )}
     </button>
   );
 }

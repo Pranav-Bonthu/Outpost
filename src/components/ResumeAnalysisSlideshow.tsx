@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { AdviceItem, ResumeAnalysisSummary } from "@/lib/resumeMatch";
+import type { CoverLetterSummary } from "@/lib/coverLetterCritique";
+import CoverLetterSlide from "@/components/CoverLetterSlide";
 
 const KIND_LABELS: Record<AdviceItem["kind"], string> = {
   project: "🛠️ Project idea",
@@ -26,18 +28,20 @@ export default function ResumeAnalysisSlideshow({
   onClose,
   deepDiveAvailableAt,
   onDeepDiveSuccess,
+  onCoverLetterSaved,
 }: {
   analysis: ResumeAnalysisSummary;
   onClose: () => void;
   deepDiveAvailableAt: string | null;
   onDeepDiveSuccess: (advice: AdviceItem[], availableAt: string) => void;
+  onCoverLetterSaved: (coverLetter: CoverLetterSummary) => void;
 }) {
   const sortedAdvice = useMemo(() => {
     const score = (item: AdviceItem) =>
       (item.resourceUrl ? 2 : 0) + (item.resourceImageUrl ? 1 : 0);
     return [...analysis.advice].sort((a, b) => score(b) - score(a));
   }, [analysis.advice]);
-  const slideCount = 1 + sortedAdvice.length;
+  const slideCount = 1 + sortedAdvice.length + 1;
   const [index, setIndex] = useState(0);
   const [deepDiveLoadingIndex, setDeepDiveLoadingIndex] = useState<number | null>(
     null
@@ -118,6 +122,12 @@ export default function ResumeAnalysisSlideshow({
             <OverviewSlide
               matchingSkills={analysis.matchingSkills}
               missingSkills={analysis.missingSkills}
+            />
+          ) : index === slideCount - 1 ? (
+            <CoverLetterSlide
+              analysisId={analysis.id}
+              coverLetter={analysis.coverLetter}
+              onSaved={onCoverLetterSaved}
             />
           ) : (
             (() => {

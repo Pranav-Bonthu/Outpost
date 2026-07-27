@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { fetchOgImages } from "@/lib/linkPreview";
+import type { CoverLetterSummary } from "@/lib/coverLetterCritique";
 
 export const MAX_INPUT_CHARS = 20000;
 
@@ -30,6 +31,7 @@ export type ResumeAnalysisSummary = {
   missingSkills: string[];
   advice: AdviceItem[];
   createdAt: string;
+  coverLetter: CoverLetterSummary | null;
 };
 
 // Fills defaults for rows saved before title/timeEstimate/resourceImageUrl

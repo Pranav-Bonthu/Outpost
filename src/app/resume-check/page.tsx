@@ -7,6 +7,10 @@ import {
   type AdviceItem,
   type ResumeAnalysisSummary,
 } from "@/lib/resumeMatch";
+import type {
+  CoverLetterCritiqueResult,
+  CoverLetterSummary,
+} from "@/lib/coverLetterCritique";
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -25,6 +29,7 @@ export default async function ResumeCheckPage() {
   const rows = await prisma.resumeAnalysis.findMany({
     where: { authorId: user.id },
     orderBy: { createdAt: "desc" },
+    include: { coverLetter: true },
   });
 
   const analyses: ResumeAnalysisSummary[] = rows.map((row) => ({
@@ -36,6 +41,16 @@ export default async function ResumeCheckPage() {
       normalizeAdviceItem
     ),
     createdAt: row.createdAt.toISOString(),
+    coverLetter: row.coverLetter
+      ? ({
+          draftText: row.coverLetter.draftText,
+          critique: row.coverLetter.critique
+            ? (JSON.parse(row.coverLetter.critique) as CoverLetterCritiqueResult)
+            : null,
+          critiquedAt: row.coverLetter.critiquedAt?.toISOString() ?? null,
+          updatedAt: row.coverLetter.updatedAt.toISOString(),
+        } satisfies CoverLetterSummary)
+      : null,
   }));
 
   const deepDiveAvailableAt = computeDeepDiveAvailableAt(user.lastDeepDiveAt);

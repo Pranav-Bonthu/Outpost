@@ -168,6 +168,19 @@ model ResumeAnalysis {
   missingSkills  String // JSON-encoded string[]
   advice         String // JSON-encoded array of AdviceItem (kind, title, timeEstimate, text, resourceTitle, resourceUrl, resourceImageUrl)
   createdAt      DateTime @default(now())
+
+  coverLetter    CoverLetter?
+}
+
+model CoverLetter {
+  id               String    @id @default(cuid())
+  resumeAnalysisId String    @unique
+  resumeAnalysis   ResumeAnalysis @relation(fields: [resumeAnalysisId], references: [id], onDelete: Cascade)
+  draftText        String
+  critique         String? // JSON-encoded CoverLetterCritiqueResult (summary, feedback[]), null until first critique
+  critiquedAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 }
 
 enum FishSpecies {

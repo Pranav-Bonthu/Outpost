@@ -6,6 +6,7 @@ import ResumeCheckForm from "@/components/ResumeCheckForm";
 import ResumeAnalysisCard from "@/components/ResumeAnalysisCard";
 import ResumeAnalysisSlideshow from "@/components/ResumeAnalysisSlideshow";
 import type { AdviceItem, ResumeAnalysisSummary } from "@/lib/resumeMatch";
+import type { CoverLetterSummary } from "@/lib/coverLetterCritique";
 
 export default function ResumeCheckClient({
   resumeText,
@@ -25,6 +26,11 @@ export default function ResumeCheckClient({
   function handleDeepDiveSuccess(advice: AdviceItem[], nextAvailableAt: string) {
     setAvailableAt(nextAvailableAt);
     setOpenAnalysis((prev) => (prev ? { ...prev, advice } : prev));
+    router.refresh();
+  }
+
+  function handleCoverLetterSaved(coverLetter: CoverLetterSummary) {
+    setOpenAnalysis((prev) => (prev ? { ...prev, coverLetter } : prev));
     router.refresh();
   }
 
@@ -62,6 +68,7 @@ export default function ResumeCheckClient({
           onClose={() => setOpenAnalysis(null)}
           deepDiveAvailableAt={availableAt}
           onDeepDiveSuccess={handleDeepDiveSuccess}
+          onCoverLetterSaved={handleCoverLetterSaved}
         />
       )}
     </>
