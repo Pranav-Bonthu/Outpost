@@ -18,6 +18,7 @@ model User {
   avatarPath   String?
   bio          String?
   resumeText   String?
+  cvText       String?
   lastDeepDiveAt DateTime?
   characterId    String?
   characterColor String?
@@ -162,6 +163,7 @@ model ResumeAnalysis {
   authorId       String
   author         User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
   resumeText     String
+  cvText         String?
   jobText        String
   jobTitle       String?
   matchingSkills String // JSON-encoded string[]

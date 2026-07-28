@@ -63,6 +63,12 @@ export async function POST(
       { status: 400 }
     );
   }
+  if (advice[itemIndex].kind === "resume_edit") {
+    return NextResponse.json(
+      { error: "This item can't be researched." },
+      { status: 400 }
+    );
+  }
 
   const [result] = await researchMissingLinks(
     [advice[itemIndex]],

@@ -59,9 +59,10 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   }
-  if (text.length > MAX_INPUT_CHARS) {
+  const truncated = text.length > MAX_INPUT_CHARS;
+  if (truncated) {
     text = text.slice(0, MAX_INPUT_CHARS);
   }
 
-  return NextResponse.json({ text });
+  return NextResponse.json({ text, truncated });
 }

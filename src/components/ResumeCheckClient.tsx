@@ -10,10 +10,12 @@ import type { CoverLetterSummary } from "@/lib/coverLetterCritique";
 
 export default function ResumeCheckClient({
   resumeText,
+  cvText,
   analyses,
   deepDiveAvailableAt,
 }: {
   resumeText: string | null;
+  cvText: string | null;
   analyses: ResumeAnalysisSummary[];
   deepDiveAvailableAt: string | null;
 }) {
@@ -36,7 +38,11 @@ export default function ResumeCheckClient({
 
   return (
     <>
-      <ResumeCheckForm resumeText={resumeText} onAnalysisComplete={setOpenAnalysis} />
+      <ResumeCheckForm
+        resumeText={resumeText}
+        cvText={cvText}
+        onAnalysisComplete={setOpenAnalysis}
+      />
 
       <div className="flex flex-col gap-3">
         <div>

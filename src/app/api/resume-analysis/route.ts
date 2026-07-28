@@ -15,12 +15,17 @@ export async function POST(request: Request) {
   const resumeText =
     typeof body.resumeText === "string" ? body.resumeText.trim() : "";
   const jobText = typeof body.jobText === "string" ? body.jobText.trim() : "";
+  const cvText =
+    typeof body.cvText === "string" && body.cvText.trim()
+      ? body.cvText.trim()
+      : null;
 
   if (
     !resumeText ||
     !jobText ||
     resumeText.length > MAX_INPUT_CHARS ||
-    jobText.length > MAX_INPUT_CHARS
+    jobText.length > MAX_INPUT_CHARS ||
+    (cvText && cvText.length > MAX_INPUT_CHARS)
   ) {
     return NextResponse.json(
       {
@@ -48,6 +53,7 @@ export async function POST(request: Request) {
         const result = await analyzeResumeMatch(
           resumeText,
           jobText,
+          cvText,
           { strict, budgetFriendly, projectsOnly, timeBoxed, longTerm, teamFriendly },
           (progress) => send({ type: "status", ...progress })
         );
@@ -55,6 +61,7 @@ export async function POST(request: Request) {
           data: {
             authorId: user.id,
             resumeText,
+            cvText,
             jobText,
             jobTitle: result.jobTitle,
             matchingSkills: JSON.stringify(result.matchingSkills),

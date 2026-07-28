@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/session";
 import AvatarUploadForm from "@/components/AvatarUploadForm";
 import ProfileForm from "@/components/ProfileForm";
 import ResumeForm from "@/components/ResumeForm";
+import CvForm from "@/components/CvForm";
 import CharacterPicker from "@/components/CharacterPicker";
 import EmailForm from "@/components/EmailForm";
 import PasswordForm from "@/components/PasswordForm";
@@ -24,6 +25,7 @@ export default async function ProfilePage() {
       <AvatarUploadForm name={user.name} avatarPath={user.avatarPath} />
       <ProfileForm initialName={user.name} initialBio={user.bio} />
       <ResumeForm initialResumeText={user.resumeText} />
+      <CvForm initialCvText={user.cvText} />
       <CharacterPicker
         initialCharacterId={user.characterId}
         initialCharacterColor={user.characterColor}

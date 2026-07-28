@@ -9,6 +9,7 @@ const KIND_LABELS: Record<AdviceItem["kind"], string> = {
   project: "🛠️ Project idea",
   certification: "🎓 Certification",
   resource: "📚 Do this",
+  resume_edit: "🔁 Resume edit",
 };
 
 function formatRemaining(availableAt: string): string {
@@ -38,7 +39,9 @@ export default function ResumeAnalysisSlideshow({
 }) {
   const sortedAdvice = useMemo(() => {
     const score = (item: AdviceItem) =>
-      (item.resourceUrl ? 2 : 0) + (item.resourceImageUrl ? 1 : 0);
+      item.kind === "resume_edit"
+        ? 4
+        : (item.resourceUrl ? 2 : 0) + (item.resourceImageUrl ? 1 : 0);
     return [...analysis.advice].sort((a, b) => score(b) - score(a));
   }, [analysis.advice]);
   const slideCount = 1 + sortedAdvice.length + 1;
@@ -297,7 +300,7 @@ function AdviceSlide({
             </span>
           </div>
         </a>
-      ) : (
+      ) : item.kind === "resume_edit" ? null : (
         <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border p-6 text-center">
           <p className="text-xs text-foreground/40">
             No link found for this one yet.

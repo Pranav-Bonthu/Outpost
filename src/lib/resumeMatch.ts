@@ -5,7 +5,7 @@ import type { CoverLetterSummary } from "@/lib/coverLetterCritique";
 export const MAX_INPUT_CHARS = 20000;
 
 export type AdviceItem = {
-  kind: "project" | "certification" | "resource";
+  kind: "project" | "certification" | "resource" | "resume_edit";
   title: string;
   timeEstimate: string;
   text: string;
@@ -53,32 +53,44 @@ export function normalizeAdviceItem(item: Partial<AdviceItem>): AdviceItem {
 type ModelAdviceItem = Omit<AdviceItem, "resourceImageUrl">;
 type ModelResult = Omit<ResumeMatchResult, "advice"> & { advice: ModelAdviceItem[] };
 
-const RESULT_SCHEMA = {
-  type: "object",
-  properties: {
-    jobTitle: { anyOf: [{ type: "string" }, { type: "null" }] },
-    matchingSkills: { type: "array", items: { type: "string" } },
-    missingSkills: { type: "array", items: { type: "string" } },
-    advice: {
-      type: "array",
-      items: {
-        type: "object",
-        properties: {
-          kind: { type: "string", enum: ["project", "certification", "resource"] },
-          title: { type: "string" },
-          timeEstimate: { type: "string" },
-          text: { type: "string" },
-          resourceTitle: { anyOf: [{ type: "string" }, { type: "null" }] },
-          resourceUrl: { anyOf: [{ type: "string" }, { type: "null" }] },
+// The "resume_edit" kind only makes sense when a CV was supplied (it names
+// specific CV content to swap onto the resume) — omitting it from the enum
+// entirely when there's no CV, rather than just asking the model not to use
+// it, is what actually prevents it: the schema's enum is visible to the
+// model as part of structured output regardless of what the prompt says.
+function buildResultSchema(hasCv: boolean) {
+  return {
+    type: "object",
+    properties: {
+      jobTitle: { anyOf: [{ type: "string" }, { type: "null" }] },
+      matchingSkills: { type: "array", items: { type: "string" } },
+      missingSkills: { type: "array", items: { type: "string" } },
+      advice: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            kind: {
+              type: "string",
+              enum: hasCv
+                ? ["project", "certification", "resource", "resume_edit"]
+                : ["project", "certification", "resource"],
+            },
+            title: { type: "string" },
+            timeEstimate: { type: "string" },
+            text: { type: "string" },
+            resourceTitle: { anyOf: [{ type: "string" }, { type: "null" }] },
+            resourceUrl: { anyOf: [{ type: "string" }, { type: "null" }] },
+          },
+          required: ["kind", "title", "timeEstimate", "text", "resourceTitle", "resourceUrl"],
+          additionalProperties: false,
         },
-        required: ["kind", "title", "timeEstimate", "text", "resourceTitle", "resourceUrl"],
-        additionalProperties: false,
       },
     },
-  },
-  required: ["jobTitle", "matchingSkills", "missingSkills", "advice"],
-  additionalProperties: false,
-} as const;
+    required: ["jobTitle", "matchingSkills", "missingSkills", "advice"],
+    additionalProperties: false,
+  } as const;
+}
 
 const BASE_SYSTEM_PROMPT = `You are a career coach helping a job seeker understand how well their resume matches a specific job posting.
 
@@ -94,6 +106,8 @@ Compare the resume against the job posting and determine:
 const SEARCH_INSTRUCTIONS = `For each item, use the web_search tool to find one real, currently available video, article, course page, or certification page that matches it, and include its title and URL. Only include a URL you actually found via search results — never invent, guess, or recall a URL from memory. You have a limited number of searches, so prioritize finding a link for the highest-impact items first; it's fine to leave resourceTitle/resourceUrl null on lower-priority items once you run out.`;
 
 const NO_SEARCH_INSTRUCTIONS = `You do not have web search available for this pass. Leave resourceTitle and resourceUrl null for every advice item — do not guess or recall a URL from memory.`;
+
+const CV_INSTRUCTIONS = `You have also been given the candidate's full CV — an unabridged record of their work history and projects that isn't limited to what fits on a one-page resume. Use it to spot relevant experience present in the CV but missing or under-emphasized on the resume. Only when the CV genuinely contains something stronger for this specific job, add an advice item with kind "resume_edit" naming the specific resume content to swap out and the specific CV content to use instead, tied to which skills from the posting it demonstrates. It's fine to produce zero resume_edit items if the resume already reflects the CV well. resume_edit items must always leave resourceTitle and resourceUrl null — there's nothing to search for. For a resume_edit item's timeEstimate, use a short phrase for how long the edit itself takes (e.g. "10-15 minutes"), not how long the underlying work took.`;
 
 const RESPOND_JSON_ONLY = `Respond with only the JSON object described by the schema — no other text before or after it.`;
 
@@ -124,7 +138,7 @@ const MAX_WEB_SEARCHES = 2;
 // resource links on a slow request instead of the whole analysis failing.
 const SEARCH_TIMEOUT_MS = 35_000;
 
-function buildSystemPrompt(options: ResumeMatchOptions, withSearch: boolean) {
+function buildSystemPrompt(options: ResumeMatchOptions, withSearch: boolean, hasCv: boolean) {
   const extra: string[] = [];
   if (options.strict) {
     extra.push(
@@ -158,6 +172,7 @@ function buildSystemPrompt(options: ResumeMatchOptions, withSearch: boolean) {
   }
   return [
     BASE_SYSTEM_PROMPT,
+    ...(hasCv ? [CV_INSTRUCTIONS] : []),
     withSearch ? SEARCH_INSTRUCTIONS : NO_SEARCH_INSTRUCTIONS,
     ...extra,
     RESPOND_JSON_ONLY,
@@ -174,6 +189,7 @@ function isAbortError(err: unknown): boolean {
 async function runAnalysis(
   resumeText: string,
   jobText: string,
+  cvText: string | null,
   options: ResumeMatchOptions,
   withSearch: boolean,
   onProgress: ((progress: ResumeMatchProgress) => void) | undefined,
@@ -198,9 +214,9 @@ async function runAnalysis(
         : {}),
       output_config: {
         effort: options.strict ? "medium" : "low",
-        format: { type: "json_schema", schema: RESULT_SCHEMA },
+        format: { type: "json_schema", schema: buildResultSchema(!!cvText) },
       },
-      system: buildSystemPrompt(options, withSearch),
+      system: buildSystemPrompt(options, withSearch, !!cvText),
       messages: [
         {
           role: "user",
@@ -210,6 +226,15 @@ async function runAnalysis(
               text: `Resume:\n${resumeText}`,
               cache_control: { type: "ephemeral" },
             },
+            ...(cvText
+              ? [
+                  {
+                    type: "text" as const,
+                    text: `\n\nCV:\n${cvText}`,
+                    cache_control: { type: "ephemeral" as const },
+                  },
+                ]
+              : []),
             { type: "text", text: `\n\nJob posting:\n${jobText}` },
           ],
         },
@@ -274,6 +299,7 @@ async function runAnalysis(
 export async function analyzeResumeMatch(
   resumeText: string,
   jobText: string,
+  cvText: string | null,
   options: ResumeMatchOptions = {},
   onProgress?: (progress: ResumeMatchProgress) => void
 ): Promise<ResumeMatchResult> {
@@ -288,6 +314,7 @@ export async function analyzeResumeMatch(
       result = await runAnalysis(
         resumeText,
         jobText,
+        cvText,
         options,
         true,
         onProgress,
@@ -302,7 +329,15 @@ export async function analyzeResumeMatch(
         percent: 75,
       });
       try {
-        result = await runAnalysis(resumeText, jobText, options, false, onProgress, undefined);
+        result = await runAnalysis(
+          resumeText,
+          jobText,
+          cvText,
+          options,
+          false,
+          onProgress,
+          undefined
+        );
       } catch {
         throw new Error("AI_REQUEST_FAILED");
       }

@@ -12,9 +12,11 @@ type StreamEvent =
 
 export default function ResumeCheckForm({
   resumeText,
+  cvText,
   onAnalysisComplete,
 }: {
   resumeText: string | null;
+  cvText: string | null;
   onAnalysisComplete: (analysis: ResumeAnalysisSummary) => void;
 }) {
   const router = useRouter();
@@ -59,6 +61,7 @@ export default function ResumeCheckForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           resumeText,
+          cvText,
           jobText,
           strict,
           budgetFriendly,
@@ -123,6 +126,11 @@ export default function ResumeCheckForm({
     >
       <div className="flex flex-col gap-3">
         <ResumeStatusBox resumeText={resumeText} />
+        {cvText?.trim() && (
+          <p className="text-xs text-foreground/50">
+            Also using your CV on file for deeper suggestions.
+          </p>
+        )}
 
         <div className="flex flex-col gap-1.5">
           <label className="text-[11px] font-medium text-foreground/50">

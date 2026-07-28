@@ -67,6 +67,7 @@ export default async function ResumeCheckPage() {
 
       <ResumeCheckClient
         resumeText={user.resumeText}
+        cvText={user.cvText}
         analyses={analyses}
         deepDiveAvailableAt={deepDiveAvailableAt}
       />

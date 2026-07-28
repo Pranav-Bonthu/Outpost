@@ -3,14 +3,14 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
-export default function ResumeForm({
-  initialResumeText,
+export default function CvForm({
+  initialCvText,
 }: {
-  initialResumeText: string | null;
+  initialCvText: string | null;
 }) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [resumeText, setResumeText] = useState(initialResumeText ?? "");
+  const [cvText, setCvText] = useState(initialCvText ?? "");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [extracting, setExtracting] = useState(false);
@@ -43,7 +43,7 @@ export default function ResumeForm({
       return;
     }
 
-    setResumeText(data.text);
+    setCvText(data.text);
     setTruncated(!!data.truncated);
   }
 
@@ -53,10 +53,10 @@ export default function ResumeForm({
     setSaved(false);
     setLoading(true);
 
-    const res = await fetch("/api/profile/resume", {
+    const res = await fetch("/api/profile/cv", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ resumeText }),
+      body: JSON.stringify({ cvText }),
     });
 
     setLoading(false);
@@ -78,9 +78,9 @@ export default function ResumeForm({
       <label className="flex flex-col gap-1 text-sm">
         <div className="flex items-center justify-between gap-2">
           <span>
-            Resume
+            CV (optional)
             <span className="ml-1 text-xs font-normal text-foreground/60">
-              Saved here once, it&apos;ll auto-fill on the resume check page.
+              Your full work history, not limited to what fits on your resume.
             </span>
           </span>
           <button
@@ -100,12 +100,12 @@ export default function ResumeForm({
           />
         </div>
         <textarea
-          value={resumeText}
+          value={cvText}
           onChange={(e) => {
-            setResumeText(e.target.value);
+            setCvText(e.target.value);
             setSaved(false);
           }}
-          placeholder="Paste your resume text, or upload a PDF above…"
+          placeholder="Paste your full CV text, or upload a PDF above…"
           className="min-h-32 rounded-lg border border-border bg-transparent px-3 py-2 text-sm outline-none focus:border-accent"
         />
       </label>
@@ -115,15 +115,13 @@ export default function ResumeForm({
           Your document was longer than we could use — it&apos;s been trimmed to fit.
         </p>
       )}
-      {saved && !error && (
-        <p className="text-sm text-foreground/60">Resume saved.</p>
-      )}
+      {saved && !error && <p className="text-sm text-foreground/60">CV saved.</p>}
       <button
         type="submit"
         disabled={loading}
         className="self-end rounded-full bg-accent px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
       >
-        {loading ? "Saving…" : "Save resume"}
+        {loading ? "Saving…" : "Save CV"}
       </button>
     </form>
   );
